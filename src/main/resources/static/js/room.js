@@ -45,8 +45,9 @@ async function loadParticipants() {
   lastList = list;
   me = window.ME ? list.find((p) => p.userId === window.ME.id) || null : null;
 
-  // 데이터 변동 없으면 무거운 재렌더(사람 그리드 + 갤러리) 스킵 — 깜박임 방지
-  const key = list
+  // 데이터 + phase 같이 키에 포함 — phase 전이 시(live→ended) 자동 재렌더
+  const phaseNow = room ? phaseOf(room) : "before";
+  const key = phaseNow + "|" + list
     .map(
       (p) =>
         p.id + "|" + p.status + "|" + p.nickname + "|" +
@@ -57,27 +58,36 @@ async function loadParticipants() {
 
   if (key !== lastPartKey) {
     lastPartKey = key;
-    const active = list.filter((p) => p.status !== "completed");
-    document.getElementById("pCount").textContent = active.length + "명";
+    const isEnded = phaseNow === "ended";
+    // 종료된 방: 다녀간 모든 인원 표시. 진행 중: 미완료만.
+    const displayList = isEnded ? list : list.filter((p) => p.status !== "completed");
+
+    // 헤딩 문구도 분기
+    const headEl = document.querySelector(".panel-head h2");
+    if (headEl) headEl.textContent = isEnded ? "함께한 사람들" : "지금 함께하는 사람들";
+
+    document.getElementById("pCount").textContent = displayList.length + "명";
     const wrap = document.getElementById("people");
-    if (active.length === 0) {
+    if (displayList.length === 0) {
       wrap.className = "";
-      const isEnded = room && phaseOf(room) === "ended";
       const emptyMsg = isEnded
         ? "이 품앗이는 마무리됐어요."
         : "아직 아무도 없어요. 첫 번째로 함께해요 🙌";
       wrap.innerHTML = `<div class="empty">${esc(emptyMsg)}</div>`;
     } else {
       wrap.className = "people";
-      wrap.innerHTML = active
-        .map(
-          (p) => `<div class="person">
+      wrap.innerHTML = displayList
+        .map((p) => {
+          const showDot = !isEnded && p.status === "active";
+          const showCheck = isEnded && p.status === "completed";
+          return `<div class="person">
             <div class="wrapav">${avatar(p.nickname, p.avatarUrl, "lg")}
-            ${p.status === "active" ? '<span class="on-dot"></span>' : ""}</div>
+            ${showDot ? '<span class="on-dot"></span>' : ""}
+            ${showCheck ? '<span class="done-check" title="인증 완료">✓</span>' : ""}</div>
             <span class="pn">${esc(p.nickname)}</span>
             ${p.title ? `<span class="pt">${esc(p.title)}</span>` : ""}
-          </div>`
-        )
+          </div>`;
+        })
         .join("");
     }
     renderGallery(list);
@@ -635,10 +645,12 @@ function tick() {
   ring.style.stroke = phase === "before" ? "#d4d4d4" : "#10b981";
   ring.style.transition = "stroke-dashoffset 1s linear, stroke .3s";
 
-  // 라이브 진입 시 내 상태 active 로 승격
+  // 라이브 진입 시 내 상태 active 로 승격, 종료 진입 시 참여자 헤딩/표시 갱신
   if (phase !== lastPhase) {
     if (phase === "live" && me && me.status === "reserved") {
       post(`/api/rooms/${RID}/activate`).then(loadParticipants);
+    } else if (phase === "ended" && lastPhase !== null) {
+      loadParticipants(); // "지금 함께하는" → "함께한 사람들" 즉시 갱신
     }
     if (lastPhase !== null) renderBar();
     lastPhase = phase;
