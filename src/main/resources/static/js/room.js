@@ -96,7 +96,13 @@ function renderGallery(list) {
     .map((s) => {
       const src = safeImgSrc(s.src);
       if (!src) return "";
-      const canReport = window.ME && window.ME.id !== s.uploaderId;
+      const isMine = window.ME && window.ME.id === s.uploaderId;
+      const canReport = window.ME && !isMine;
+      const actionBtn = isMine
+        ? `<button class="del-photo-x" data-pid="${esc(String(s.id))}" title="사진 삭제">🗑</button>`
+        : canReport
+          ? `<button class="report-x" data-pid="${esc(String(s.id))}" title="신고">⚐</button>`
+          : "";
       return `<div class="gcard">
         <img class="gimg" src="${src}" alt="">
         <div class="gfoot">
@@ -105,7 +111,7 @@ function renderGallery(list) {
             <div class="gn">${esc(s.nickname)}</div>
             ${s.title ? `<div class="gt">${esc(s.title)}</div>` : ""}
           </div>
-          ${canReport ? `<button class="report-x" data-pid="${esc(String(s.id))}" title="신고">⚐</button>` : ""}
+          ${actionBtn}
         </div>
       </div>`;
     })
@@ -114,6 +120,18 @@ function renderGallery(list) {
     b.onclick = (e) => {
       e.stopPropagation();
       openReportDialog(b.dataset.pid);
+    };
+  });
+  document.querySelectorAll(".del-photo-x").forEach((b) => {
+    b.onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm("이 사진을 삭제할까요?")) return;
+      const res = await del(`/api/photos/${b.dataset.pid}`);
+      if (!res.ok) {
+        alert("삭제에 실패했어요.");
+        return;
+      }
+      await loadParticipants();
     };
   });
 }

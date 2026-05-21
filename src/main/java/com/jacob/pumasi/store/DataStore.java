@@ -303,6 +303,25 @@ public class DataStore {
 		return users.findById(userId).orElse(null);
 	}
 
+	/**
+	 * 본인 업로드 사진 삭제.
+	 * 성공 시 해당 사진이 속했던 방 id 반환 (broadcast 용), 권한 없거나 미존재면 null.
+	 * 완료 상태와 successCount 는 건드리지 않음 — 사진은 사라져도 인증 사실은 유지.
+	 */
+	@Transactional
+	public String deletePhoto(Long photoId, String userId) {
+		ParticipantPhoto ph = photos.findById(photoId).orElse(null);
+		if (ph == null) {
+			return null;
+		}
+		Participant p = participants.findById(ph.getParticipantId()).orElse(null);
+		if (p == null || !p.getUserId().equals(userId)) {
+			return null; // 본인 사진 아님
+		}
+		photos.delete(ph);
+		return p.getRoomId();
+	}
+
 	/** 신고 등록 — 같은 사용자가 같은 대상을 중복 신고하면 false 반환 */
 	@Transactional
 	public boolean addReport(String reporterId, String targetType, String targetId, String reason) {

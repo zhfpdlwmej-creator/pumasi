@@ -81,6 +81,17 @@ function post(path, body) {
   });
 }
 
+function del(path) {
+  const headers = {};
+  const xsrf = getCookie("XSRF-TOKEN");
+  if (xsrf) headers["X-XSRF-TOKEN"] = xsrf;
+  return fetch(path, {
+    method: "DELETE",
+    headers,
+    credentials: "same-origin",
+  });
+}
+
 function fmtClock(totalSec) {
   totalSec = Math.max(0, Math.floor(totalSec));
   const h = Math.floor(totalSec / 3600);

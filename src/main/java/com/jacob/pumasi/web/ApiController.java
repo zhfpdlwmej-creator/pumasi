@@ -180,6 +180,21 @@ public class ApiController {
 		return ResponseEntity.ok(updated);
 	}
 
+	@org.springframework.web.bind.annotation.DeleteMapping("/api/photos/{photoId}")
+	public ResponseEntity<Void> deletePhoto(
+			@PathVariable Long photoId, HttpSession session) {
+		AppUser u = user(session);
+		if (u == null) {
+			return ResponseEntity.status(401).build();
+		}
+		String roomId = store.deletePhoto(photoId, u.getId());
+		if (roomId == null) {
+			return ResponseEntity.status(403).build(); // 본인 사진 아니거나 미존재
+		}
+		realtime.broadcast("participants", roomId);
+		return ResponseEntity.ok().build();
+	}
+
 	@PostMapping("/api/reports")
 	public ResponseEntity<Void> report(@RequestParam String targetType,
 			@RequestParam String targetId,
