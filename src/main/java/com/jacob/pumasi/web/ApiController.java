@@ -109,15 +109,17 @@ public class ApiController {
 	}
 
 	@PostMapping("/api/rooms/{id}/leave")
-	public ResponseEntity<Void> leave(@PathVariable String id, HttpSession session) {
+	public ResponseEntity<AppUser> leave(@PathVariable String id, HttpSession session) {
 		AppUser u = user(session);
 		if (u == null) {
 			return ResponseEntity.status(401).build();
 		}
-		store.leave(id, u.getId());
+		AppUser updated = store.leave(id, u.getId());
 		realtime.broadcast("participants", id);
 		realtime.broadcast("rooms", null);
-		return ResponseEntity.ok().build();
+		// 종료 후 탈출 = 완주 인정인 경우 갱신된 user 반환(클라이언트가 축하 모달 띄움).
+		// 그 외 케이스는 null 본문.
+		return ResponseEntity.ok(updated);
 	}
 
 	@PostMapping("/api/rooms/{id}/activate")

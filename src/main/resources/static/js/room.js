@@ -493,19 +493,33 @@ async function leave() {
   if (phase === "live" && !completed) {
     if (!confirm("지금 나가면 '쉬어간 별명'이 잠시 붙을 수 있어요. 다음에 다시 함께해도 괜찮아요. 그래도 나가시겠어요?")) return;
   } else if (phase === "ended" && !completed && w.state === "open") {
-    // 종료됐는데 아직 인증 안 한 상태 — 한 번 권유
+    // 종료됐는데 미완료 — 인증샷 권유 모달 (그냥 나가기도 완료로 인정됨)
     const action = await askLeaveOrUpload();
     if (action === "upload") {
-      photoInput.click(); // 업로드 흐름이 알아서 완료 처리하고 done 모달 띄움
+      photoInput.click(); // 업로드 흐름이 완료 처리 + done 모달
       return;
     }
-    if (action !== "leave") return; // 백드롭 닫기 = 취소
+    if (action !== "leave") return; // 백드롭 클릭 = 취소
+    // action === "leave" → 그냥 나가기. 서버가 완주 인정 처리할 것
   }
 
   const res = await post(`/api/rooms/${RID}/leave`);
   if (!res.ok) {
     alert("탈출 처리 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
     return;
+  }
+  // 종료 후 탈출 = 완주 인정인 경우 서버가 갱신된 user 를 돌려줌 → 축하 모달
+  let updatedUser = null;
+  try {
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      updatedUser = await res.json();
+    }
+  } catch (e) {}
+  if (updatedUser && updatedUser.id) {
+    done = true;
+    showDone(updatedUser.successCount);
+    return; // 축하 모달의 "홈으로 돌아가기" 가 location 처리
   }
   location.href = "/";
 }
@@ -516,10 +530,10 @@ function askLeaveOrUpload() {
     bg.className = "modal-bg";
     bg.innerHTML = `
       <div class="modal" style="text-align:center;max-width:340px;padding:28px 24px">
-        <div class="big">✨</div>
-        <h2 style="margin-top:12px;font-size:17px;font-weight:800">갓생 기록을 해보아요</h2>
+        <div class="big">👏</div>
+        <h2 style="margin-top:12px;font-size:17px;font-weight:800">오늘의 품앗이 끝!</h2>
         <p style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.6">
-          인증샷 한 장만 올리면<br>오늘의 품앗이가 완료로 남아요
+          사진 한 장 남기면 갓생기록에<br>오래 남아요. 안 남겨도 완료는 카운트돼요.
         </p>
         <div style="display:flex;gap:8px;margin-top:22px">
           <button class="btn btn-ghost" id="justLeaveBtn" style="flex:1">그냥 나가기</button>

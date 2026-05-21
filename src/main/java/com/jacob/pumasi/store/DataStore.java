@@ -177,21 +177,52 @@ public class DataStore {
 		}
 	}
 
+	/**
+	 * 그룹 탈출 — 상황별 분기.
+	 * @return 종료 후 탈출로 '완주 인정' 처리된 경우 갱신된 사용자, 그 외 null
+	 */
 	@Transactional
-	public void leave(String roomId, String userId) {
+	public AppUser leave(String roomId, String userId) {
 		Optional<Participant> opt = participants.findByRoomIdAndUserId(roomId, userId);
 		if (!opt.isPresent()) {
-			return;
+			return null;
 		}
 		Participant p = opt.get();
+		// 이미 완료한 사람이 탈출 누르면 기록(사진 포함) 보존, 그냥 종료
+		if ("completed".equals(p.getStatus())) {
+			return null;
+		}
 		Room r = rooms.findById(roomId).orElse(null);
-		if (r != null && "live".equals(r.phase()) && !"completed".equals(p.getStatus())) {
+		String phase = r == null ? "before" : r.phase();
+
+		if ("live".equals(phase)) {
+			// 라이브 중 이탈 = 쉬어간 1회 + 기록 삭제
 			users.findById(userId).ifPresent(u -> {
 				u.setFailCount(u.getFailCount() + 1);
 				users.save(u);
 			});
+			participants.delete(p);
+			return null;
 		}
+
+		if ("ended".equals(phase)) {
+			// 종료 후 탈출 = 완주 인정. 기록은 보존하여 함께한 사람들에 ✓ 표시.
+			p.setStatus("completed");
+			participants.save(p);
+			AppUser u = users.findById(userId).orElse(null);
+			if (u != null) {
+				u.setSuccessCount(u.getSuccessCount() + 1);
+				if (u.getFailCount() > 0) {
+					u.setFailCount(u.getFailCount() - 1);
+				}
+				return users.save(u);
+			}
+			return null;
+		}
+
+		// before — 단순 예약 취소, 페널티 없음
 		participants.delete(p);
+		return null;
 	}
 
 	@Transactional
