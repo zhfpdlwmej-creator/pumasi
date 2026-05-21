@@ -375,7 +375,7 @@ function renderBar() {
   const showLeave = !completed;
   bar.innerHTML =
     (showLeave
-      ? `<button class="btn btn-ghost" id="leaveBtn" style="padding-left:20px;padding-right:20px">나가기</button>`
+      ? `<button class="btn btn-ghost" id="leaveBtn" style="padding-left:20px;padding-right:20px">그룹 탈출</button>`
       : "") + primaryHtml;
 
   if (showLeave) document.getElementById("leaveBtn").onclick = leave;
