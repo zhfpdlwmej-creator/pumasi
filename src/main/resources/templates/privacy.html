@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 — 개인정보 처리방침</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a class="logo" href="/"><span>🤝</span>품앗이</a>
+    <a class="btn btn-ghost sm" href="/">← 홈</a>
+  </div>
+</header>
+
+<main class="wrap" style="padding-top:32px;padding-bottom:80px">
+  <h1 style="font-size:24px;font-weight:800;margin-bottom:6px">개인정보 처리방침</h1>
+  <p class="note" style="text-align:left;margin-top:0;margin-bottom:32px">
+    품앗이(이하 "서비스")는 「개인정보 보호법」을 준수하며, 이용자의 개인정보를 다음과 같이 처리합니다.
+    최종 개정일: 2026-05-20.
+  </p>
+
+  <section class="policy">
+    <h2>1. 수집하는 개인정보 항목 및 수집 방법</h2>
+    <ul>
+      <li>회원가입(소셜 로그인) 시: 카카오 식별자, 닉네임, 프로필 이미지 URL</li>
+      <li>서비스 이용 중 자동 생성: 참여 기록(방·시간·상태), 완료/이탈 횟수, 평판 별명, 업로드한 인증 사진</li>
+      <li>접속 기록: IP 주소, 접속 시각, 브라우저 정보(서버 로그 한정, 30일 보관 후 자동 삭제)</li>
+    </ul>
+
+    <h2>2. 개인정보의 처리 목적</h2>
+    <ul>
+      <li>회원 식별 및 본인 확인</li>
+      <li>품앗이 방 참여/완료 인증 및 평판(별명) 시스템 운영</li>
+      <li>서비스 부정 이용 방지(중복 이탈자 식별, 신고 처리)</li>
+      <li>서비스 개선 및 통계 분석(개인 식별이 불가능한 형태로 가공)</li>
+    </ul>
+
+    <h2>3. 개인정보의 보유 및 이용기간</h2>
+    <ul>
+      <li>회원 탈퇴 시까지. 탈퇴 즉시 모든 식별 정보 파기(단, 관계 법령에 따라 보관이 필요한 경우는 예외)</li>
+      <li>인증 사진: 업로드 후 90일, 또는 회원 탈퇴 시 즉시 삭제</li>
+      <li>신고 처리 기록: 처리 완료일로부터 3년 보관(부정 이용 재발 방지 목적)</li>
+    </ul>
+
+    <h2>4. 제3자 제공</h2>
+    <p>서비스는 이용자의 동의 없이 개인정보를 외부에 제공하지 않습니다. 다만, 법령에 따라 수사기관 등이 적법한 절차에 따라 요구하는 경우 예외로 합니다.</p>
+
+    <h2>5. 처리 위탁</h2>
+    <ul>
+      <li>Supabase (Database / Storage) — 서비스 데이터 저장. 리전: ap-northeast-2 (Seoul)</li>
+      <li>Kakao — 소셜 로그인 인증</li>
+    </ul>
+
+    <h2>6. 정보주체의 권리</h2>
+    <p>이용자는 언제든지 자신의 개인정보를 열람·정정·삭제·처리정지 요청할 수 있습니다. 프로필 페이지에서 직접 닉네임을 수정하거나 회원 탈퇴를 진행할 수 있으며, 그 외 요청은 아래 책임자에게 문의하실 수 있습니다.</p>
+
+    <h2>7. 안전성 확보 조치</h2>
+    <ul>
+      <li>전송 구간 HTTPS 암호화</li>
+      <li>비밀번호 등 인증 정보는 카카오 OAuth로 위임, 서비스 자체 저장 없음</li>
+      <li>CSRF·XSS 등 일반 웹 취약점에 대한 다중 방어</li>
+      <li>업로드 이미지는 자동 부적절 콘텐츠 검사 후 저장</li>
+    </ul>
+
+    <h2>8. 개인정보 보호 책임자</h2>
+    <p>이름: (운영자명) · 이메일: (운영자 이메일) — 정식 서비스 출시 전 채워 넣을 것</p>
+
+    <h2>9. 정책의 변경</h2>
+    <p>본 방침은 법령·서비스 정책에 따라 변경될 수 있으며, 변경 시 서비스 내 공지로 안내합니다.</p>
+  </section>
+</main>
+
+<script id="meData" type="application/json">${meJson?no_esc}</script>
+<script>window.ME = JSON.parse(document.getElementById('meData').textContent);</script>
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+.gradle/
+build/
+bin/
+out/
+.git/
+.idea/
+.settings/
+.classpath
+.project
+*.log
+.DS_Store
+
+# 비밀이 들어 있는 로컬 설정 — 컨테이너에 절대 포함 금지
+src/main/resources/application-local.yml

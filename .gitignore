@@ -1,0 +1,10 @@
+/build/
+/bin/
+/.gradle/
+/out/
+*.log
+.DS_Store
+
+# 로컬 전용 DB 접속정보 (Supabase 등) — 절대 커밋 금지
+src/main/resources/application-local.yml
+

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 — 내 프로필</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a class="logo" href="/"><span>🤝</span>품앗이</a>
+    <a class="btn btn-ghost sm" href="/">← 홈</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="pfhead">
+    <div class="av lg" id="pfAv"></div>
+    <div class="pfname-row">
+      <h1 id="pfName">${user.nickname}</h1>
+      <button class="iconbtn" id="renameBtn" title="별명 수정">✏️</button>
+    </div>
+    <button class="title-badge" id="openCatalog" title="별명 도감 열기">${user.title}</button>
+    <#if (user.failCount > 0)>
+    <p class="fail-note">쉬어간 날 ${user.failCount}회 — 다시 함께하면 별명도 같이 자라요</p>
+    <#else>
+    <p>함께 만든 작은 성취들</p>
+    </#if>
+  </section>
+
+  <div id="catalogModal"></div>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="v brand">${user.successCount}</div>
+      <div class="l">완료한 품앗이</div>
+    </div>
+    <div class="stat">
+      <div class="v" id="histCount">0</div>
+      <div class="l">참여 기록</div>
+    </div>
+  </section>
+
+  <section style="margin-top:32px">
+    <h2 style="font-size:14px;font-weight:700;color:#404040;margin-bottom:12px">참여 history</h2>
+    <div class="hist" id="hist">
+      <div class="empty">불러오는 중...</div>
+    </div>
+  </section>
+
+  <div style="margin-top:40px;text-align:center">
+    <a class="btn btn-ghost" href="/logout">로그아웃</a>
+  </div>
+  <p class="foot-link"><a href="/privacy">개인정보 처리방침</a></p>
+  <div style="height:24px"></div>
+</main>
+
+<script id="meData" type="application/json">${meJson?no_esc}</script>
+<script>window.ME = JSON.parse(document.getElementById('meData').textContent);</script>
+<script src="/js/app.js"></script>
+<script src="/js/profile.js"></script>
+</body>
+</html>

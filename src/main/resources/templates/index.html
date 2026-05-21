@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 — 오늘의 품앗이</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="pb">
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a class="logo" href="/"><span>🤝</span>품앗이</a>
+    <#if user??>
+      <a class="profile-chip" href="/profile">
+        <div class="av md" id="hdrAv"></div>
+        <div class="meta">
+          <b>${user.nickname}</b>
+          <small>완료 ${user.successCount}회</small>
+        </div>
+      </a>
+    <#else>
+      <a class="btn btn-kakao sm" href="/auth/kakao?next=/">💬 카카오로 시작하기</a>
+    </#if>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="ptitle">
+    <h1>오늘의 품앗이</h1>
+    <p>혼자 하기 어려운 일, 같이 하면 끝나요.</p>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="cards" id="cards">
+    <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+  </div>
+
+  <p class="foot-link"><a href="/privacy">개인정보 처리방침</a></p>
+</main>
+
+<a class="fab" href="/create"><span style="font-size:18px">＋</span> 품앗이 방 만들기</a>
+
+<script id="meData" type="application/json">${meJson?no_esc}</script>
+<script>window.ME = JSON.parse(document.getElementById('meData').textContent);</script>
+<script src="/js/app.js"></script>
+<script src="/js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew compileJava -q)",
+      "Bash(./gradlew bootRun -q)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8181/api/time)",
+      "Bash(curl -s http://localhost:8181/api/rooms)",
+      "Bash(curl -s http://localhost:8181/api/rooms/r_55a32186f466/participants)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :8181)",
+      "Bash(./gradlew bootRun -q --args='--server.port=8182')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8182/api/time)",
+      "Bash(curl -s \"http://localhost:8182/api/rooms\")",
+      "PowerShell(\\(Invoke-WebRequest \"http://localhost:8182/api/rooms/r_99732e340ec6/participants\"\\).Content)",
+      "Bash(./gradlew compileJava)",
+      "Bash(./gradlew bootRun --args='--server.port=8182')",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

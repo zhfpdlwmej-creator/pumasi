@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 방 만들기</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="pb">
+<main class="wrap-sm">
+  <div class="topbar">
+    <button class="back" onclick="history.back()">←</button>
+    <h1 style="font-size:20px;font-weight:800">품앗이 방 만들기</h1>
+  </div>
+
+  <div class="field">
+    <p>무엇을 함께할까요?</p>
+    <div class="grid4" id="cat"></div>
+  </div>
+
+  <div class="field">
+    <p>제목</p>
+    <input type="text" id="title" maxlength="40" placeholder="예) 폰 잠그고 자소서 쓰기 1시간">
+  </div>
+
+  <div class="field">
+    <p>언제 시작할까요? (오늘)</p>
+    <div class="timegrid" id="slots"></div>
+  </div>
+
+  <div class="field">
+    <p>얼마나 할까요?</p>
+    <div class="row" id="dur"></div>
+  </div>
+
+  <div class="field">
+    <p>몇 명까지?</p>
+    <div class="row" id="cap"></div>
+  </div>
+</main>
+
+<div class="bar">
+  <div class="wrap-sm" style="padding:0">
+    <button class="btn btn-primary full" id="submit" disabled>방 만들기</button>
+  </div>
+</div>
+
+<script id="meData" type="application/json">${meJson?no_esc}</script>
+<script>window.ME = JSON.parse(document.getElementById('meData').textContent);</script>
+<script src="/js/app.js"></script>
+<script src="/js/create.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 — 함께하는 중</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="pb">
+<main class="wrap">
+  <div class="topbar">
+    <button class="back" onclick="location.href='/'">←</button>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <span class="chip" id="rCat"></span>
+        <span style="font-size:12px;color:var(--soft)" id="rMeta"></span>
+      </div>
+      <h1 id="rTitle" style="font-size:18px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">불러오는 중...</h1>
+    </div>
+  </div>
+
+  <div class="timer-box">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 300 300">
+        <circle cx="150" cy="150" r="130" fill="none" stroke="#f0f0f0" stroke-width="14"/>
+        <circle id="ring" cx="150" cy="150" r="130" fill="none" stroke="#d4d4d4"
+          stroke-width="14" stroke-linecap="round"
+          stroke-dasharray="816.81" stroke-dashoffset="816.81"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-label" id="rLabel">곧 시작됩니다</div>
+        <div class="ring-time" id="rTime">--:--</div>
+        <div class="ring-hint" id="rHint">시작까지 남은 시간</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="share-row">
+    <button class="btn btn-kakao" id="kakaoShareBtn">
+      <span style="font-size:18px;line-height:1">💬</span>
+      카카오톡으로 같이하기
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>지금 함께하는 사람들</h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-soft sm" id="photoBtn" style="display:none">📷 내 사진</button>
+        <span class="n" id="pCount">0명</span>
+      </div>
+    </div>
+    <div id="people"></div>
+    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+  </div>
+
+  <div class="panel" id="galleryPanel" style="display:none">
+    <div class="panel-head">
+      <h2>함께 올린 사진</h2>
+      <span class="n" id="gCount">0장</span>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <p class="note" id="note">조용히 함께하는 공간이에요. 말 없이, 존재만으로 충분해요.</p>
+</main>
+
+<div class="bar">
+  <div class="wrap" style="padding:0">
+    <div class="bar-in" id="bar"></div>
+  </div>
+</div>
+
+<div id="doneModal"></div>
+<div id="reportModal"></div>
+
+<script id="meData" type="application/json">${meJson?no_esc}</script>
+<script>
+  window.ROOM_ID = "${roomId}";
+  window.ME = JSON.parse(document.getElementById('meData').textContent);
+</script>
+<!-- 인증샷 부적절 콘텐츠 차단 — TensorFlow.js + NSFWJS (브라우저 내 분류) -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
+<#if (kakaoJsKey?length > 0)>
+<!-- 카카오톡 공유 SDK — 키가 있을 때만 로드, 없으면 Web Share / Clipboard 폴백 -->
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"></script>
+<script>
+  try {
+    if (window.Kakao && !Kakao.isInitialized()) Kakao.init("${kakaoJsKey}");
+  } catch (e) {}
+</script>
+</#if>
+<script src="/js/app.js"></script>
+<script src="/js/room.js"></script>
+</body>
+</html>

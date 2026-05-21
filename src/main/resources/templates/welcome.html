@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 — 환영합니다</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="login-body">
+<main class="login-wrap">
+  <div class="login-card">
+    <div class="login-emoji">🎉</div>
+    <h1 class="login-title">환영합니다!</h1>
+    <p class="login-tagline">닉네임과 프로필을<br>골라 주세요.</p>
+
+    <div class="avatar-picker" id="avatarPicker"></div>
+
+    <form id="welcomeForm" class="welcome-form">
+      <input type="text" id="welcomeNick" name="nickname"
+             maxlength="14" required autocomplete="off"
+             value="${user.nickname}" placeholder="닉네임 (1~14자)">
+      <button type="submit" class="btn btn-primary login-btn">시작하기</button>
+    </form>
+    <p class="welcome-hint">언제든 프로필에서 다시 바꿀 수 있어요.</p>
+  </div>
+</main>
+
+<script id="meData" type="application/json">${meJson?no_esc}</script>
+<script>window.ME = JSON.parse(document.getElementById('meData').textContent);</script>
+<script src="/js/app.js"></script>
+<script>
+  (function () {
+    const ANIMALS = ["🐶","🐱","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐵"];
+    let selected = null;
+
+    // 기본 선택: 유저 id 해시로 한 마리 골라줌 (같은 사람은 매번 같은 기본값)
+    function defaultPick() {
+      const id = (window.ME && window.ME.id) || "";
+      let h = 0;
+      for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+      return ANIMALS[h % ANIMALS.length];
+    }
+
+    function paint() {
+      const picker = document.getElementById('avatarPicker');
+      picker.innerHTML = ANIMALS
+        .map(function (a) {
+          return '<button type="button" class="avatar-opt ' +
+            (a === selected ? 'on' : '') +
+            '" data-av="' + a + '">' + a + '</button>';
+        })
+        .join('');
+      picker.querySelectorAll('.avatar-opt').forEach(function (b) {
+        b.onclick = function () { selected = b.dataset.av; paint(); };
+      });
+    }
+
+    selected = defaultPick();
+    paint();
+
+    const form = document.getElementById('welcomeForm');
+    const input = document.getElementById('welcomeNick');
+    setTimeout(function () { input.focus(); input.select(); }, 50);
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const nickname = input.value.trim();
+      if (!nickname) { input.focus(); return; }
+      const btn = form.querySelector('button[type=submit]');
+      btn.disabled = true; btn.textContent = '저장 중…';
+      const res = await post('/api/welcome', { nickname: nickname, avatar: selected });
+      if (res.ok) { location.href = '/'; return; }
+      btn.disabled = false; btn.textContent = '시작하기';
+      alert('닉네임을 1~14자로 입력해 주세요.');
+    });
+  })();
+</script>
+</body>
+</html>
