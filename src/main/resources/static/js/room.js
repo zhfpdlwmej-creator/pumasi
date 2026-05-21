@@ -39,34 +39,51 @@ async function loadRoom() {
     fmtTime(room.startTime) + " 시작 · " + room.duration + "분";
 }
 
+let lastPartKey = null;
 async function loadParticipants() {
   const list = (await api(`/api/rooms/${RID}/participants`)) || [];
   lastList = list;
   me = window.ME ? list.find((p) => p.userId === window.ME.id) || null : null;
-  const active = list.filter((p) => p.status !== "completed");
-  document.getElementById("pCount").textContent = active.length + "명";
-  const wrap = document.getElementById("people");
-  if (active.length === 0) {
-    wrap.className = ""; // .people 그리드 스타일 끄기 — 빈 메시지가 세로로 깨지는 거 방지
-    const isEnded = room && phaseOf(room) === "ended";
-    const emptyMsg = isEnded
-      ? "이 품앗이는 마무리됐어요."
-      : "아직 아무도 없어요. 첫 번째로 함께해요 🙌";
-    wrap.innerHTML = `<div class="empty">${esc(emptyMsg)}</div>`;
-  } else {
-    wrap.className = "people";
-    wrap.innerHTML = active
-      .map(
-        (p) => `<div class="person">
-          <div class="wrapav">${avatar(p.nickname, p.avatarUrl, "lg")}
-          ${p.status === "active" ? '<span class="on-dot"></span>' : ""}</div>
-          <span class="pn">${esc(p.nickname)}</span>
-          ${p.title ? `<span class="pt">${esc(p.title)}</span>` : ""}
-        </div>`
-      )
-      .join("");
+
+  // 데이터 변동 없으면 무거운 재렌더(사람 그리드 + 갤러리) 스킵 — 깜박임 방지
+  const key = list
+    .map(
+      (p) =>
+        p.id + "|" + p.status + "|" + p.nickname + "|" +
+        (p.title || "") + "|" + (p.avatarUrl || "") +
+        "|" + (p.photos || []).map((x) => x.id).join(",")
+    )
+    .join("&");
+
+  if (key !== lastPartKey) {
+    lastPartKey = key;
+    const active = list.filter((p) => p.status !== "completed");
+    document.getElementById("pCount").textContent = active.length + "명";
+    const wrap = document.getElementById("people");
+    if (active.length === 0) {
+      wrap.className = "";
+      const isEnded = room && phaseOf(room) === "ended";
+      const emptyMsg = isEnded
+        ? "이 품앗이는 마무리됐어요."
+        : "아직 아무도 없어요. 첫 번째로 함께해요 🙌";
+      wrap.innerHTML = `<div class="empty">${esc(emptyMsg)}</div>`;
+    } else {
+      wrap.className = "people";
+      wrap.innerHTML = active
+        .map(
+          (p) => `<div class="person">
+            <div class="wrapav">${avatar(p.nickname, p.avatarUrl, "lg")}
+            ${p.status === "active" ? '<span class="on-dot"></span>' : ""}</div>
+            <span class="pn">${esc(p.nickname)}</span>
+            ${p.title ? `<span class="pt">${esc(p.title)}</span>` : ""}
+          </div>`
+        )
+        .join("");
+    }
+    renderGallery(list);
   }
-  renderGallery(list);
+
+  // 가벼운 갱신은 항상 (DOM 깜박임 거의 없음)
   document.getElementById("note").style.display = me ? "none" : "block";
   renderBar();
 }
@@ -395,11 +412,19 @@ function closeReport() {
 }
 
 /* ───── 하단 바 ───── */
+let lastBarKey = null;
 function renderBar() {
-  const bar = document.getElementById("bar");
   const phase = room ? phaseOf(room) : "before";
   const completed = (me && me.status === "completed") || done;
   const w = uploadWindowInfo();
+
+  // 상태가 동일하면 innerHTML 재할당 스킵 — 매 5초마다 깜박이는 거 방지
+  const mins = w.state === "before" ? Math.ceil(w.untilOpenMs / 60000) : 0;
+  const key = `${!!me}|${phase}|${completed}|${w.state}|${mins}`;
+  if (key === lastBarKey) return;
+  lastBarKey = key;
+
+  const bar = document.getElementById("bar");
 
   if (!me) {
     // 종료된 방은 새로 참여 불가 (서버에서도 막혀 있지만 UI 도 명시)
@@ -636,5 +661,6 @@ function tick() {
       loadParticipants();
     if (m.scope === "rooms") loadRoom();
   });
-  setInterval(loadParticipants, 10000);
+  // 폴링 주기 ↓ — 변화는 거의 WebSocket 으로 받고, 폴링은 fallback 용
+  setInterval(loadParticipants, 30000);
 })();

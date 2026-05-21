@@ -72,13 +72,21 @@ async function loadMyJoined() {
   if (Array.isArray(ids)) myRooms = new Set(ids);
 }
 
+let lastCardsKey = null;
 async function load() {
   await loadMyJoined();
   let rooms = await api("/api/rooms");
   if (!rooms) rooms = [];
-  // 시작 10분 전 알림 예약 (필터 적용 전 전체 목록 기준)
   schedulePreStartNotifications(rooms, myRooms);
   if (filter !== "전체") rooms = rooms.filter((r) => r.category === filter);
+
+  // 변동 없으면 재렌더 스킵 — 폴링 깜박임 방지
+  const key = filter + "|" +
+    Array.from(myRooms).sort().join(",") + "|" +
+    rooms.map((r) => `${r.id}/${r.phase}/${r.participantCount}/${r.capacity ?? ""}/${r.title}`).join("&");
+  if (key === lastCardsKey) return;
+  lastCardsKey = key;
+
   const el = document.getElementById("cards");
   if (rooms.length === 0) {
     el.innerHTML =
@@ -108,5 +116,6 @@ async function reserve(id) {
 
 renderTabs();
 load();
+// 폴링 빈도를 줄임 — 변화는 거의 WebSocket 으로 들어옴
 connectRealtime(() => load());
-setInterval(load, 15000);
+setInterval(load, 30000);
