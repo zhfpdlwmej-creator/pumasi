@@ -202,6 +202,10 @@ public class DataStore {
 		if ("completed".equals(status)) {
 			users.findById(userId).ifPresent(u -> {
 				u.setSuccessCount(u.getSuccessCount() + 1);
+				// 완료 1회로 '쉬어간 날' 1회 상쇄 (0 미만 안 내려감)
+				if (u.getFailCount() > 0) {
+					u.setFailCount(u.getFailCount() - 1);
+				}
 				users.save(u);
 			});
 		}
@@ -289,6 +293,10 @@ public class DataStore {
 			AppUser u = users.findById(userId).orElse(null);
 			if (u != null) {
 				u.setSuccessCount(u.getSuccessCount() + 1);
+				// 완료 1회로 '쉬어간 날' 1회 상쇄 (0 미만 안 내려감)
+				if (u.getFailCount() > 0) {
+					u.setFailCount(u.getFailCount() - 1);
+				}
 				return users.save(u);
 			}
 		}
