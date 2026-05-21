@@ -53,7 +53,7 @@ function card(r) {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">
           <span class="chip ${esc(r.category)}">${esc(r.category)}</span>
           ${r.phase === "live" ? '<span class="live"><span class="dot"></span>LIVE</span>' : ""}
-          ${joined ? '<span class="chip joined">참여 중</span>' : ""}
+          ${joined && !ended ? '<span class="chip joined">참여 중</span>' : ""}
         </div>
         <h3>${esc(r.title)}</h3>
         <div class="sub">${esc(fmtTime(r.startTime))} · ${ended ? "종료" : esc(relStart(r.startTime))}</div>

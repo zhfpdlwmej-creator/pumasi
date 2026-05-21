@@ -20,8 +20,8 @@ public interface ParticipantRepository extends JpaRepository<Participant, String
 
 	boolean existsByRoomIdAndUserId(String roomId, String userId);
 
-	/** completed 가 아닌 참여 중인 방 id 목록 */
-	@Query("select p.roomId from Participant p where p.userId = :uid and p.status <> 'completed'")
+	/** 참여 이력이 있는 모든 방 id (status 무관) — 종료 후 사진 다시 보기 위해 입장 허용 */
+	@Query("select p.roomId from Participant p where p.userId = :uid")
 	List<String> findJoinedRoomIds(@Param("uid") String userId);
 
 	@Modifying

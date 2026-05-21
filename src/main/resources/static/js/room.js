@@ -47,8 +47,12 @@ async function loadParticipants() {
   document.getElementById("pCount").textContent = active.length + "명";
   const wrap = document.getElementById("people");
   if (active.length === 0) {
-    wrap.innerHTML =
-      '<div class="empty">아직 아무도 없어요. 첫 번째로 함께해요 🙌</div>';
+    wrap.className = ""; // .people 그리드 스타일 끄기 — 빈 메시지가 세로로 깨지는 거 방지
+    const isEnded = room && phaseOf(room) === "ended";
+    const emptyMsg = isEnded
+      ? "이 품앗이는 마무리됐어요."
+      : "아직 아무도 없어요. 첫 번째로 함께해요 🙌";
+    wrap.innerHTML = `<div class="empty">${esc(emptyMsg)}</div>`;
   } else {
     wrap.className = "people";
     wrap.innerHTML = active
