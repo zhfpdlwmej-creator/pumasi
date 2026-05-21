@@ -389,14 +389,57 @@ async function join() {
   await loadParticipants();
 }
 async function leave() {
-  // 시작 전 / 종료 후엔 패널티 없으니 조용히 나가고, 라이브 중에만 안내
   const phase = room ? phaseOf(room) : "before";
   const completed = me && me.status === "completed";
+  const w = uploadWindowInfo();
+
   if (phase === "live" && !completed) {
     if (!confirm("지금 나가면 '쉬어간 별명'이 잠시 붙을 수 있어요. 다음에 다시 함께해도 괜찮아요. 그래도 나가시겠어요?")) return;
+  } else if (phase === "ended" && !completed && w.state === "open") {
+    // 종료됐는데 아직 인증 안 한 상태 — 한 번 권유
+    const action = await askLeaveOrUpload();
+    if (action === "upload") {
+      photoInput.click(); // 업로드 흐름이 알아서 완료 처리하고 done 모달 띄움
+      return;
+    }
+    if (action !== "leave") return; // 백드롭 닫기 = 취소
   }
-  await post(`/api/rooms/${RID}/leave`);
+
+  const res = await post(`/api/rooms/${RID}/leave`);
+  if (!res.ok) {
+    alert("탈출 처리 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
+    return;
+  }
   location.href = "/";
+}
+
+function askLeaveOrUpload() {
+  return new Promise((resolve) => {
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `
+      <div class="modal" style="text-align:center;max-width:340px;padding:28px 24px">
+        <div class="big">✨</div>
+        <h2 style="margin-top:12px;font-size:17px;font-weight:800">갓생 기록을 해보아요</h2>
+        <p style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.6">
+          인증샷 한 장만 올리면<br>오늘의 품앗이가 완료로 남아요
+        </p>
+        <div style="display:flex;gap:8px;margin-top:22px">
+          <button class="btn btn-ghost" id="justLeaveBtn" style="flex:1">그냥 나가기</button>
+          <button class="btn btn-primary" id="uploadInsteadBtn" style="flex:1.3">📷 인증샷 올리기</button>
+        </div>
+      </div>`;
+    bg.addEventListener("click", (e) => {
+      if (e.target === bg) { bg.remove(); resolve("cancel"); }
+    });
+    document.body.appendChild(bg);
+    bg.querySelector("#justLeaveBtn").addEventListener("click", () => {
+      bg.remove(); resolve("leave");
+    });
+    bg.querySelector("#uploadInsteadBtn").addEventListener("click", () => {
+      bg.remove(); resolve("upload");
+    });
+  });
 }
 
 /* 완료 모달 — 횟수 구간별로 톤이 변하는 유머 메시지 풀에서 랜덤 추첨 */
