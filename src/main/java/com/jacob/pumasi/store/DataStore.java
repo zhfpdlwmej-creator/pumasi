@@ -67,6 +67,10 @@ public class DataStore {
 		Map<String, Integer> counts = activeCountsByRoom();
 		List<RoomView> out = new ArrayList<>(all.size());
 		for (Room r : all) {
+			// 종료된 방은 홈에서 숨김 — 참여자는 프로필 갓생이력에서 접근
+			if ("ended".equals(r.phase())) {
+				continue;
+			}
 			out.add(toView(r, counts.getOrDefault(r.getId(), 0)));
 		}
 		return out;
