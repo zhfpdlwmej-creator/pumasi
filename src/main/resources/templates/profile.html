@@ -33,18 +33,18 @@
   <div id="catalogModal"></div>
 
   <section class="stats">
-    <div class="stat">
+    <button type="button" class="stat" data-filter="completed">
       <div class="v brand">${user.successCount}</div>
       <div class="l">완료한 품앗이</div>
-    </div>
-    <div class="stat">
+    </button>
+    <button type="button" class="stat" data-filter="all">
       <div class="v" id="histCount">0</div>
       <div class="l">참여 기록</div>
-    </div>
+    </button>
   </section>
 
   <section style="margin-top:32px">
-    <h2 style="font-size:14px;font-weight:700;color:#404040;margin-bottom:12px">참여 history</h2>
+    <h2 style="font-size:14px;font-weight:700;color:#404040;margin-bottom:12px">갓생이력</h2>
     <div class="hist" id="hist">
       <div class="empty">불러오는 중...</div>
     </div>

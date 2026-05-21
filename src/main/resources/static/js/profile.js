@@ -95,17 +95,22 @@ function renderSection(heading, tiers, kind, cur) {
   </div>`;
 }
 
-/* ───── 참여 history ───── */
-(async function () {
-  const hist = (await api("/api/profile/history")) || [];
-  document.getElementById("histCount").textContent = hist.length;
+/* ───── 갓생이력 (필터: 전체 / 완료만) ───── */
+let allHist = [];
+let currentFilter = "all";
+
+function renderHist() {
   const el = document.getElementById("hist");
-  if (hist.length === 0) {
-    el.innerHTML =
-      '<div class="empty">아직 기록이 없어요. 첫 품앗이를 시작해보세요!</div>';
+  const list = currentFilter === "completed"
+    ? allHist.filter((r) => r.phase === "completed")
+    : allHist;
+  if (list.length === 0) {
+    el.innerHTML = currentFilter === "completed"
+      ? '<div class="empty">아직 완료한 품앗이가 없어요.<br>인증샷 한 장으로 시작해 봐요!</div>'
+      : '<div class="empty">아직 기록이 없어요. 첫 품앗이를 시작해보세요!</div>';
     return;
   }
-  el.innerHTML = hist
+  el.innerHTML = list
     .map((r) => {
       const st = r.phase;
       const cls = st === "completed" ? "done" : "other";
@@ -119,4 +124,22 @@ function renderSection(heading, tiers, kind, cur) {
       </a>`;
     })
     .join("");
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll(".stat[data-filter]").forEach((b) => {
+    b.classList.toggle("active", b.dataset.filter === f);
+  });
+  renderHist();
+}
+
+document.querySelectorAll(".stat[data-filter]").forEach((btn) => {
+  btn.addEventListener("click", () => setFilter(btn.dataset.filter));
+});
+
+(async function () {
+  allHist = (await api("/api/profile/history")) || [];
+  document.getElementById("histCount").textContent = allHist.length;
+  setFilter("all"); // 기본은 전체
 })();
