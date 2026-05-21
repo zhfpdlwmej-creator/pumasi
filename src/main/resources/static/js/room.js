@@ -174,36 +174,76 @@ photoInput.onchange = async () => {
   if (files.length === 0) return;
   const wasCompleted = !!(me && me.status === "completed");
   setUploadBusy(true);
+  let lastUser = null;
+  let blocked = 0;
+  const failures = []; // {name, reason}
   try {
-    let lastUser = null;
-    let blocked = 0;
     for (const file of files) {
-      const dataUrl = await readResized(file);
+      // HEIC/HEIF 사전 차단 — 아이폰 기본 포맷, 브라우저 디코드 불가
+      const isHeic =
+        /heic|heif/i.test(file.type || "") ||
+        /\.(heic|heif)$/i.test(file.name || "");
+      if (isHeic) {
+        failures.push({ name: file.name, reason: "HEIC 미지원" });
+        continue;
+      }
+      let dataUrl;
+      try {
+        dataUrl = await readResized(file);
+      } catch (e) {
+        console.error("이미지 디코드 실패", file.name, file.type, e);
+        failures.push({ name: file.name, reason: "이미지 디코드 실패" });
+        continue;
+      }
       let safe = true;
       try { safe = await isSafeImage(dataUrl); } catch (e) { safe = true; }
       if (!safe) { blocked++; continue; }
-      const res = await post(`/api/rooms/${RID}/photo`, { dataUrl });
+      let res;
+      try {
+        res = await post(`/api/rooms/${RID}/photo`, { dataUrl });
+      } catch (e) {
+        console.error("업로드 네트워크 실패", e);
+        failures.push({ name: file.name, reason: "네트워크 오류" });
+        continue;
+      }
       if (res.status === 423) {
         alert("아직 인증 가능 시간이 아니에요. (종료 10분 전부터 가능)");
         break;
       }
       if (res.status === 403) { alert("방에 참여 중이 아니에요."); break; }
-      if (!res.ok) { alert("사진 업로드에 실패했어요."); break; }
+      if (res.status === 413) {
+        failures.push({ name: file.name, reason: "용량 초과" });
+        continue;
+      }
+      if (!res.ok) {
+        console.error("업로드 응답 비정상", res.status);
+        failures.push({ name: file.name, reason: "서버 응답 " + res.status });
+        continue;
+      }
       lastUser = await res.json();
     }
-    if (blocked > 0) {
-      alert(blocked + "장이 부적절한 콘텐츠로 차단됐어요. 다른 사진으로 다시 시도해 주세요.");
-    }
-    await loadParticipants();
-    // 미완료 상태에서 업로드 성공 → 완료 모달
-    if (lastUser && !wasCompleted && !done) {
-      done = true;
-      showDone(lastUser.successCount);
-    }
-  } catch (e) {
-    alert("업로드 중 오류가 발생했어요.");
   } finally {
     setUploadBusy(false);
+  }
+
+  if (blocked > 0) {
+    alert(blocked + "장이 부적절한 콘텐츠로 차단됐어요.");
+  }
+  if (failures.length > 0) {
+    const heicCount = failures.filter((f) => f.reason === "HEIC 미지원").length;
+    let msg = failures.length + "장 업로드 실패\n\n";
+    msg += failures.map((f) => "• " + (f.name || "사진") + " — " + f.reason).join("\n");
+    if (heicCount > 0) {
+      msg += "\n\nHEIC 안내: 아이폰 → 설정 → 카메라 → 포맷 → '가장 호환성' 으로 바꾸면 JPEG으로 저장돼요. 이미 찍은 사진은 갤러리 공유 시 자동 변환되기도 합니다.";
+    }
+    alert(msg);
+  }
+
+  await loadParticipants();
+  // 미완료 상태에서 업로드 성공 → 완료 모달
+  if (lastUser && !wasCompleted && !done) {
+    done = true;
+    showDone(lastUser.successCount);
   }
 };
 
