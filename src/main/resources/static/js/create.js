@@ -38,6 +38,13 @@ function defaultSlot() {
 }
 state.slot = defaultSlot();
 
+// 직접 입력 필드가 포커스됐거나 값이 있으면 "직접 입력 모드" → 해당 프리셋 비활성
+function customActive(id) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  return document.activeElement === el || el.value.trim() !== "";
+}
+
 function paint() {
   document.getElementById("cat").innerHTML = CATEGORIES.map(
     (x) => `<button class="pick ${state.category === x.c ? "on" : ""}" data-c="${x.c}"><span class="e">${x.e}</span>${x.c}</button>`
@@ -48,11 +55,13 @@ function paint() {
     const on = state.slot === s.iso ? "on" : "";
     return `<button class="pick brand ${on}" data-s="${s.iso}" ${past ? "disabled" : ""}>${s.label}</button>`;
   }).join("");
+  const durLock = customActive("durCustom");
   document.getElementById("dur").innerHTML = DURS.map(
-    (d) => `<button class="pick ${state.duration === d ? "on" : ""}" data-d="${d}">${d}분</button>`
+    (d) => `<button class="pick ${state.duration === d && !durLock ? "on" : ""}" data-d="${d}" ${durLock ? "disabled" : ""}>${d}분</button>`
   ).join("");
+  const capLock = customActive("capCustom");
   document.getElementById("cap").innerHTML = CAPS.map(
-    (c) => `<button class="pick ${state.capacity === c.v ? "on" : ""}" data-cap="${c.v}">${c.l}</button>`
+    (c) => `<button class="pick ${state.capacity === c.v && !capLock ? "on" : ""}" data-cap="${c.v}" ${capLock ? "disabled" : ""}>${c.l}</button>`
   ).join("");
 
   bind("[data-c]", "c", "category");
@@ -92,23 +101,25 @@ function validate() {
 
 document.getElementById("title").addEventListener("input", validate);
 
-// 직접 입력 — 시간(분)
-document.getElementById("durCustom").addEventListener("input", (e) => {
+// 직접 입력 — 시간(분). 포커스/입력/블러 모두 프리셋 활성 상태 갱신
+const durCustomEl = document.getElementById("durCustom");
+durCustomEl.addEventListener("input", (e) => {
   const v = parseInt(e.target.value, 10);
-  if (!isNaN(v) && v >= 5 && v <= 600) {
-    state.duration = v;
-    paint(); // 프리셋 하이라이트 해제 (input 은 그대로 유지)
-  }
+  if (!isNaN(v) && v >= 5 && v <= 600) state.duration = v;
+  paint();
 });
+durCustomEl.addEventListener("focus", paint);
+durCustomEl.addEventListener("blur", paint);
 
 // 직접 입력 — 인원(명)
-document.getElementById("capCustom").addEventListener("input", (e) => {
+const capCustomEl = document.getElementById("capCustom");
+capCustomEl.addEventListener("input", (e) => {
   const v = parseInt(e.target.value, 10);
-  if (!isNaN(v) && v >= 2 && v <= 100) {
-    state.capacity = v;
-    paint();
-  }
+  if (!isNaN(v) && v >= 2 && v <= 100) state.capacity = v;
+  paint();
 });
+capCustomEl.addEventListener("focus", paint);
+capCustomEl.addEventListener("blur", paint);
 
 // 비밀방 토글
 document.getElementById("secret").addEventListener("change", (e) => {
