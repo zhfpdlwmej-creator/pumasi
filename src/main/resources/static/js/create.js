@@ -38,11 +38,11 @@ function defaultSlot() {
 }
 state.slot = defaultSlot();
 
-// 직접 입력 필드가 포커스됐거나 값이 있으면 "직접 입력 모드" → 해당 프리셋 비활성
+// 직접 입력 필드에 커서가 있는 동안만 "직접 입력 모드" → 해당 프리셋 비활성.
+// (포커스가 빠지면 다시 활성 → 프리셋을 눌러 직접 입력값을 초기화/대체할 수 있음)
 function customActive(id) {
   const el = document.getElementById(id);
-  if (!el) return false;
-  return document.activeElement === el || el.value.trim() !== "";
+  return el != null && document.activeElement === el;
 }
 
 function paint() {
