@@ -71,6 +71,10 @@ public class DataStore {
 			if ("ended".equals(r.phase())) {
 				continue;
 			}
+			// 비밀방은 홈 목록에서 제외 — 공유 링크로만 입장
+			if (r.isSecret()) {
+				continue;
+			}
 			out.add(toView(r, counts.getOrDefault(r.getId(), 0)));
 		}
 		return out;
@@ -94,7 +98,7 @@ public class DataStore {
 
 	@Transactional
 	public Room createRoom(String title, String category, String startIso,
-			int duration, Integer capacity, String createdBy) {
+			int duration, Integer capacity, String createdBy, boolean secret) {
 		Room r = new Room();
 		r.setId(id("r"));
 		r.setTitle(title);
@@ -103,6 +107,7 @@ public class DataStore {
 		r.setDuration(duration);
 		r.setCapacity(capacity);
 		r.setCreatedBy(createdBy);
+		r.setSecret(secret);
 		return rooms.save(r);
 	}
 
@@ -110,7 +115,7 @@ public class DataStore {
 		return new RoomView(r.getId(), r.getTitle(), r.getCategory().name(),
 				r.getCategory().getEmoji(), r.getStartTime().format(ISO),
 				r.getDuration(), r.getCapacity(), r.getCreatedBy(),
-				count, r.phase());
+				count, r.phase(), r.isSecret());
 	}
 
 	private Map<String, Integer> activeCountsByRoom() {

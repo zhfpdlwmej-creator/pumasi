@@ -36,6 +36,7 @@ async function loadRoom() {
   cat.className = "chip " + room.category;
   cat.textContent = room.categoryEmoji + " " + room.category;
   document.getElementById("rMeta").textContent =
+    (room.secret ? "🔒 비밀방 · " : "") +
     fmtTime(room.startTime) + " 시작 · " + room.duration + "분";
 }
 

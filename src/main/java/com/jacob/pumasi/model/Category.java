@@ -4,7 +4,13 @@ public enum Category {
 	청소("🧹"),
 	집중("🔥"),
 	집밥("🍚"),
-	운동("💪");
+	운동("💪"),
+	공부("📚"),
+	독서("📖"),
+	기상("🌅"),
+	명상("🧘"),
+	취미("🎨"),
+	기타("✨");
 
 	private final String emoji;
 
@@ -22,6 +28,6 @@ public enum Category {
 				return c;
 			}
 		}
-		return 청소;
+		return 기타;
 	}
 }

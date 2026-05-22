@@ -80,6 +80,6 @@ public class Seeder implements ApplicationRunner {
 
 	private Room newRoom(String title, Category cat, LocalDateTime start, int dur,
 			Integer cap, String createdBy) {
-		return store.createRoom(title, cat.name(), start.format(DataStore.ISO), dur, cap, createdBy);
+		return store.createRoom(title, cat.name(), start.format(DataStore.ISO), dur, cap, createdBy, false);
 	}
 }

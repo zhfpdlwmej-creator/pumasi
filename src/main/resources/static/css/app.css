@@ -132,6 +132,12 @@ img { display: block; max-width: 100%; }
 .chip.집중 { background: #ffedd5; color: #c2410c; }
 .chip.집밥 { background: #fef3c7; color: #b45309; }
 .chip.운동 { background: #ede9fe; color: #6d28d9; }
+.chip.공부 { background: #dcfce7; color: #15803d; }
+.chip.독서 { background: #fce7f3; color: #be185d; }
+.chip.기상 { background: #fef9c3; color: #a16207; }
+.chip.명상 { background: #ccfbf1; color: #0f766e; }
+.chip.취미 { background: #ede9fe; color: #7c3aed; }
+.chip.기타 { background: #f1f5f9; color: #475569; }
 .chip.joined { background: var(--brand-50); color: var(--brand-600); }
 .live { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--brand-600); }
 .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--brand); animation: pulse 2s infinite; }
@@ -184,6 +190,39 @@ input[type=text] {
   background: #fff; box-shadow: inset 0 0 0 1px #e5e5e5; outline: none;
 }
 input[type=text]:focus { box-shadow: inset 0 0 0 2px var(--brand); }
+
+/* 직접 입력 (시간/인원) */
+.custom-input { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.custom-input input[type=number] {
+  flex: 1; border-radius: 16px; padding: 13px 16px; font-size: 16px;
+  background: #fff; box-shadow: inset 0 0 0 1px #e5e5e5; outline: none;
+  -moz-appearance: textfield;
+}
+.custom-input input[type=number]::-webkit-outer-spin-button,
+.custom-input input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.custom-input input[type=number]:focus { box-shadow: inset 0 0 0 2px var(--brand); }
+.custom-input .unit { font-size: 15px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+
+/* 비밀방 토글 */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: #fff; border-radius: 16px; padding: 16px;
+  box-shadow: inset 0 0 0 1px var(--line); cursor: pointer;
+}
+.toggle-row p { margin: 0; font-size: 14px; font-weight: 700; color: #404040; }
+.toggle-row small { font-size: 12px; color: var(--soft); }
+.toggle {
+  appearance: none; -webkit-appearance: none;
+  width: 46px; height: 28px; border-radius: 999px; background: #d4d4d8;
+  position: relative; flex-shrink: 0; cursor: pointer; transition: background .2s;
+}
+.toggle::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 999px; background: #fff;
+  transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.toggle:checked { background: var(--brand); }
+.toggle:checked::after { transform: translateX(18px); }
 
 /* bottom bar */
 .bar {

@@ -1,11 +1,13 @@
 const CATEGORIES = [
-  { c: "청소", e: "🧹" }, { c: "집중", e: "🔥" },
-  { c: "집밥", e: "🍚" }, { c: "운동", e: "💪" },
+  { c: "청소", e: "🧹" }, { c: "집중", e: "🔥" }, { c: "집밥", e: "🍚" },
+  { c: "운동", e: "💪" }, { c: "공부", e: "📚" }, { c: "독서", e: "📖" },
+  { c: "기상", e: "🌅" }, { c: "명상", e: "🧘" }, { c: "취미", e: "🎨" },
+  { c: "기타", e: "✨" },
 ];
 const DURS = [30, 60, 90, 120];
 const CAPS = [{ l: "5명", v: 5 }, { l: "10명", v: 10 }, { l: "무제한", v: null }];
 
-const state = { category: "청소", duration: 60, capacity: 5, slot: null };
+const state = { category: "청소", duration: 60, capacity: 5, slot: null, secret: false };
 
 // 로컬 시간 → 'YYYY-MM-DDTHH:mm:ss' (서버 LocalDateTime 파싱용)
 function localIso(dt) {
@@ -55,10 +57,19 @@ function paint() {
 
   bind("[data-c]", "c", "category");
   bind("[data-s]", "s", "slot");
-  bind("[data-d]", "d", "duration", true);
+  // 시간 프리셋 클릭 → 직접 입력 비우기
+  document.querySelectorAll("[data-d]").forEach((b) =>
+    b.addEventListener("click", () => {
+      state.duration = +b.dataset.d;
+      document.getElementById("durCustom").value = "";
+      paint();
+    })
+  );
+  // 인원 프리셋 클릭 → 직접 입력 비우기
   document.querySelectorAll("[data-cap]").forEach((b) =>
     b.addEventListener("click", () => {
       state.capacity = b.dataset.cap === "null" ? null : +b.dataset.cap;
+      document.getElementById("capCustom").value = "";
       paint();
     })
   );
@@ -81,6 +92,29 @@ function validate() {
 
 document.getElementById("title").addEventListener("input", validate);
 
+// 직접 입력 — 시간(분)
+document.getElementById("durCustom").addEventListener("input", (e) => {
+  const v = parseInt(e.target.value, 10);
+  if (!isNaN(v) && v >= 5 && v <= 600) {
+    state.duration = v;
+    paint(); // 프리셋 하이라이트 해제 (input 은 그대로 유지)
+  }
+});
+
+// 직접 입력 — 인원(명)
+document.getElementById("capCustom").addEventListener("input", (e) => {
+  const v = parseInt(e.target.value, 10);
+  if (!isNaN(v) && v >= 2 && v <= 100) {
+    state.capacity = v;
+    paint();
+  }
+});
+
+// 비밀방 토글
+document.getElementById("secret").addEventListener("change", (e) => {
+  state.secret = e.target.checked;
+});
+
 document.getElementById("submit").addEventListener("click", async () => {
   if (!window.ME) { location.href = "/auth/kakao?next=/create"; return; }
   const btn = document.getElementById("submit");
@@ -91,6 +125,7 @@ document.getElementById("submit").addEventListener("click", async () => {
     category: state.category,
     startTime: state.slot,
     duration: state.duration,
+    secret: state.secret,
   };
   if (state.capacity != null) body.capacity = state.capacity;
   const res = await post("/api/rooms", body);

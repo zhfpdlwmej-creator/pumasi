@@ -32,11 +32,29 @@
   <div class="field">
     <p>얼마나 할까요?</p>
     <div class="row" id="dur"></div>
+    <div class="custom-input">
+      <input type="number" id="durCustom" min="5" max="600" inputmode="numeric" placeholder="직접 입력">
+      <span class="unit">분</span>
+    </div>
   </div>
 
   <div class="field">
     <p>몇 명까지?</p>
     <div class="row" id="cap"></div>
+    <div class="custom-input">
+      <input type="number" id="capCustom" min="2" max="100" inputmode="numeric" placeholder="직접 입력">
+      <span class="unit">명</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="toggle-row" for="secret">
+      <div>
+        <p style="margin-bottom:2px">🔒 비밀방으로 만들기</p>
+        <small>목록에 안 보이고, 공유한 링크로만 입장할 수 있어요</small>
+      </div>
+      <input type="checkbox" id="secret" class="toggle">
+    </label>
   </div>
 </main>
 

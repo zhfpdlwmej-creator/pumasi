@@ -45,6 +45,10 @@ public class Room {
 	@Column(name = "created_by", nullable = false, length = 36)
 	private String createdBy;
 
+	/** 비밀방 — 홈 목록 미노출, 링크로만 입장 */
+	@Column(nullable = false)
+	private boolean secret;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 

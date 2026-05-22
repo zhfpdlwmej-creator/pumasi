@@ -16,4 +16,5 @@ public class RoomView {
 	private String createdBy;
 	private int participantCount;
 	private String phase;       // before | live | ended
+	private boolean secret;     // 비밀방 여부
 }

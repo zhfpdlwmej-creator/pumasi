@@ -77,12 +77,20 @@ public class ApiController {
 			@RequestParam String startTime,
 			@RequestParam int duration,
 			@RequestParam(required = false) Integer capacity,
+			@RequestParam(required = false, defaultValue = "false") boolean secret,
 			HttpSession session) {
 		AppUser u = user(session);
 		if (u == null) {
 			return ResponseEntity.status(401).build();
 		}
-		Room r = store.createRoom(title, category, startTime, duration, capacity, u.getId());
+		String t = title == null ? "" : title.trim();
+		if (t.isEmpty() || t.length() > 40) {
+			return ResponseEntity.badRequest().build();
+		}
+		// 서버측 방어 clamp
+		int dur = Math.max(5, Math.min(600, duration));
+		Integer cap = capacity == null ? null : Math.max(2, Math.min(1000, capacity));
+		Room r = store.createRoom(t, category, startTime, dur, cap, u.getId(), secret);
 		store.join(r.getId(), u, "reserved");
 		realtime.broadcast("rooms", null);
 		return ResponseEntity.ok(store.roomView(r.getId()));
