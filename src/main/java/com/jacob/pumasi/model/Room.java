@@ -49,8 +49,17 @@ public class Room {
 	@Column(nullable = false)
 	private boolean secret;
 
+	/** 입장 비밀번호 BCrypt 해시 (선택). null/빈값이면 링크 전용 */
+	@Column(name = "password_hash", length = 100)
+	private String passwordHash;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	/** 비밀번호 잠금 여부 */
+	public boolean isLocked() {
+		return passwordHash != null && !passwordHash.isEmpty();
+	}
 
 	@PrePersist
 	void onCreate() {

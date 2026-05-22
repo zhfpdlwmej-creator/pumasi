@@ -17,4 +17,5 @@ public class RoomView {
 	private int participantCount;
 	private String phase;       // before | live | ended
 	private boolean secret;     // 비밀방 여부
+	private boolean locked;     // 비밀번호 잠금 여부
 }

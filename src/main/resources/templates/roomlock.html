@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#10b981">
+<title>품앗이 — 비밀방 입장</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="login-body">
+<main class="login-wrap">
+  <div class="login-card">
+    <div class="login-emoji">🔒</div>
+    <h1 class="login-title">비밀방</h1>
+    <p class="login-tagline">${roomTitle}<br>입장하려면 비밀번호가 필요해요</p>
+
+    <form id="unlockForm" class="welcome-form">
+      <input type="password" id="roomPw" maxlength="20" required autocomplete="off" placeholder="비밀번호">
+      <button type="submit" class="btn btn-primary login-btn">입장하기</button>
+    </form>
+    <p class="login-foot"><a href="/">← 홈으로</a></p>
+  </div>
+</main>
+
+<script src="/js/app.js"></script>
+<script>
+  (function () {
+    const form = document.getElementById('unlockForm');
+    const input = document.getElementById('roomPw');
+    const roomId = "${roomId}";
+    setTimeout(function () { input.focus(); }, 50);
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const pw = input.value;
+      if (!pw) return;
+      const btn = form.querySelector('button[type=submit]');
+      btn.disabled = true; btn.textContent = '확인 중…';
+      const res = await post('/api/rooms/' + roomId + '/unlock', { password: pw });
+      if (res.ok) { location.href = '/room/' + roomId; return; }
+      btn.disabled = false; btn.textContent = '입장하기';
+      input.value = '';
+      input.focus();
+      alert('비밀번호가 틀렸어요.');
+    });
+  })();
+</script>
+</body>
+</html>

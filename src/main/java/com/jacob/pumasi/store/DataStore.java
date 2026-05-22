@@ -43,15 +43,18 @@ public class DataStore {
 	private final ParticipantRepository participants;
 	private final ParticipantPhotoRepository photos;
 	private final ReportRepository reports;
+	private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
 	public DataStore(UserRepository users, RoomRepository rooms,
 			ParticipantRepository participants, ParticipantPhotoRepository photos,
-			ReportRepository reports) {
+			ReportRepository reports,
+			org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
 		this.users = users;
 		this.rooms = rooms;
 		this.participants = participants;
 		this.photos = photos;
 		this.reports = reports;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	/** 호환을 위해 시그니처 유지 — prefix 인자는 무시되고 UUID 본문만 반환 */
@@ -98,7 +101,7 @@ public class DataStore {
 
 	@Transactional
 	public Room createRoom(String title, String category, String startIso,
-			int duration, Integer capacity, String createdBy, boolean secret) {
+			int duration, Integer capacity, String createdBy, boolean secret, String password) {
 		Room r = new Room();
 		r.setId(id("r"));
 		r.setTitle(title);
@@ -108,14 +111,31 @@ public class DataStore {
 		r.setCapacity(capacity);
 		r.setCreatedBy(createdBy);
 		r.setSecret(secret);
+		// 비밀방 + 비번 입력 시에만 해시 저장 (BCrypt)
+		if (secret && password != null && !password.trim().isEmpty()) {
+			r.setPasswordHash(passwordEncoder.encode(password.trim()));
+		}
 		return rooms.save(r);
+	}
+
+	/** 방 비밀번호 검증 — 잠금 없으면 항상 true */
+	@Transactional(readOnly = true)
+	public boolean checkRoomPassword(String roomId, String password) {
+		Room r = rooms.findById(roomId).orElse(null);
+		if (r == null) {
+			return false;
+		}
+		if (!r.isLocked()) {
+			return true;
+		}
+		return password != null && passwordEncoder.matches(password, r.getPasswordHash());
 	}
 
 	private RoomView toView(Room r, int count) {
 		return new RoomView(r.getId(), r.getTitle(), r.getCategory().name(),
 				r.getCategory().getEmoji(), r.getStartTime().format(ISO),
 				r.getDuration(), r.getCapacity(), r.getCreatedBy(),
-				count, r.phase(), r.isSecret());
+				count, r.phase(), r.isSecret(), r.isLocked());
 	}
 
 	private Map<String, Integer> activeCountsByRoom() {

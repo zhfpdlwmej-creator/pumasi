@@ -121,9 +121,11 @@ capCustomEl.addEventListener("input", (e) => {
 capCustomEl.addEventListener("focus", paint);
 capCustomEl.addEventListener("blur", paint);
 
-// 비밀방 토글
+// 비밀방 토글 — 켜면 비밀번호 입력칸 노출
 document.getElementById("secret").addEventListener("change", (e) => {
   state.secret = e.target.checked;
+  document.getElementById("pwField").style.display = state.secret ? "" : "none";
+  if (!state.secret) document.getElementById("roomPw").value = "";
 });
 
 document.getElementById("submit").addEventListener("click", async () => {
@@ -139,6 +141,8 @@ document.getElementById("submit").addEventListener("click", async () => {
     secret: state.secret,
   };
   if (state.capacity != null) body.capacity = state.capacity;
+  const pw = document.getElementById("roomPw").value.trim();
+  if (state.secret && pw) body.password = pw;
   const res = await post("/api/rooms", body);
   if (res.ok) {
     const room = await res.json();

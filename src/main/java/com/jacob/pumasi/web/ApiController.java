@@ -78,6 +78,7 @@ public class ApiController {
 			@RequestParam int duration,
 			@RequestParam(required = false) Integer capacity,
 			@RequestParam(required = false, defaultValue = "false") boolean secret,
+			@RequestParam(required = false) String password,
 			HttpSession session) {
 		AppUser u = user(session);
 		if (u == null) {
@@ -90,10 +91,24 @@ public class ApiController {
 		// 서버측 방어 clamp
 		int dur = Math.max(5, Math.min(600, duration));
 		Integer cap = capacity == null ? null : Math.max(2, Math.min(1000, capacity));
-		Room r = store.createRoom(t, category, startTime, dur, cap, u.getId(), secret);
+		Room r = store.createRoom(t, category, startTime, dur, cap, u.getId(), secret, password);
 		store.join(r.getId(), u, "reserved");
+		// 생성자는 본인 방에 비번 없이 들어가도록 세션 인증 처리
+		if (r.isLocked()) {
+			session.setAttribute("authed_" + r.getId(), Boolean.TRUE);
+		}
 		realtime.broadcast("rooms", null);
 		return ResponseEntity.ok(store.roomView(r.getId()));
+	}
+
+	@PostMapping("/api/rooms/{id}/unlock")
+	public ResponseEntity<Void> unlock(@PathVariable String id,
+			@RequestParam String password, HttpSession session) {
+		if (store.checkRoomPassword(id, password)) {
+			session.setAttribute("authed_" + id, Boolean.TRUE);
+			return ResponseEntity.ok().build();
+		}
+		return ResponseEntity.status(403).build();
 	}
 
 	@PostMapping("/api/rooms/{id}/join")
@@ -109,6 +124,11 @@ public class ApiController {
 		// 종료된 방엔 새로 참여 못 함
 		if ("ended".equals(r.phase())) {
 			return ResponseEntity.status(410).build();
+		}
+		// 비번 잠긴 방은 unlock 인증(또는 기존 참여자)만 입장
+		if (r.isLocked() && session.getAttribute("authed_" + id) == null
+				&& !store.isParticipant(id, u.getId())) {
+			return ResponseEntity.status(403).build();
 		}
 		store.join(id, u, "reserved");
 		realtime.broadcast("participants", id);

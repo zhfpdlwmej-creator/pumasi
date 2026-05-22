@@ -125,6 +125,17 @@ public class MainController {
 				return new ModelAndView("redirect:/");
 			}
 		}
+		// 비밀번호 잠긴 방 — 참여자도 아니고 세션 인증도 안 됐으면 비번 게이트
+		if (r.isLocked()) {
+			boolean isParticipant = u != null && store.isParticipant(id, u.getId());
+			boolean authed = session.getAttribute("authed_" + id) != null;
+			if (!isParticipant && !authed) {
+				ModelAndView gate = new ModelAndView("roomlock");
+				gate.addObject("roomId", id);
+				gate.addObject("roomTitle", r.getTitle());
+				return gate;
+			}
+		}
 		ModelAndView mv = render("room", session);
 		mv.addObject("roomId", id);
 		return mv;
