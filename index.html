@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>하루 기록장</title>
+<meta name="description" content="식사, 약, 화장실, 비고를 날짜별 표로 적는 기록장">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#eef2f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101a19" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="하루 기록장">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root { padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+.backup { justify-content: flex-end; }
+.backup .ghost { height: 44px; font-size: 0.875rem; }
+</style>
+</head>
+<body>
+<style>
+/* 레이아웃: 표 하나가 전부 — 하루가 한 줄, 칸을 누르면 그 칸에 적는다. 좁은 화면에서는 하루가 카드 한 장. */
+:root {
+  --bg: #eef2f1;
+  --surface: #ffffff;
+  --ink: #16302d;
+  --muted: #5d7370;
+  --line: #d5dedc;
+  --accent: #0f6b62;
+  --accent-ink: #ffffff;
+  --meal: #a65a00;
+  --meal-bg: #fbeed9;
+  --med: #1f5fae;
+  --med-bg: #e1ecfa;
+  --wc: #5b4a9e;
+  --wc-bg: #ebe7f8;
+  --note: #a8324f;
+  --note-bg: #fae3e9;
+  --danger: #b3261e;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101a19; --surface: #192725; --ink: #e4eeec; --muted: #94aaa6; --line: #2c3f3c;
+    --accent: #55c4b6; --accent-ink: #06211e;
+    --meal: #f0b45e; --meal-bg: #3a2c12; --med: #8ab8f5; --med-bg: #172c47;
+    --wc: #b9aaf2; --wc-bg: #2a2447;
+    --note: #f29bb0; --note-bg: #42202a; --danger: #ff8a80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101a19; --surface: #192725; --ink: #e4eeec; --muted: #94aaa6; --line: #2c3f3c;
+  --accent: #55c4b6; --accent-ink: #06211e;
+  --meal: #f0b45e; --meal-bg: #3a2c12; --med: #8ab8f5; --med-bg: #172c47;
+  --wc: #b9aaf2; --wc-bg: #2a2447;
+  --note: #f29bb0; --note-bg: #42202a; --danger: #ff8a80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font);
+  font-size: 16px; line-height: 1.5;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+.hint { margin: 2px 0 0; color: var(--muted); font-size: 0.9375rem; }
+.status { font-size: 0.8125rem; color: var(--muted); min-height: 1.2em; }
+.status.warn { color: var(--danger); }
+
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.grow { flex: 1 1 200px; }
+label, .lbl { font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+input[type="text"], input[type="time"], input[type="date"], input[type="search"], textarea {
+  width: 100%; min-height: 44px; padding: 9px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface);
+}
+input[type="time"], input[type="date"] { width: auto; min-width: 11em; font-variant-numeric: tabular-nums; }
+textarea { resize: vertical; }
+
+/* 표 */
+.tablewrap { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 0.9375rem; }
+th, td { text-align: left; vertical-align: top; border-top: 1px solid var(--line); border-left: 1px solid var(--line); padding: 0; }
+thead th { border-top: 0; padding: 8px 10px; font-size: 0.8125rem; font-weight: 700; }
+th:first-child, td:first-child { border-left: 0; }
+col.c-date { width: 6.2em; } col.c-wc { width: 6.4em; } col.c-med { width: 21%; } col.c-note { width: 21%; }
+th.h-meal { color: var(--meal); background: var(--meal-bg); }
+th.h-med { color: var(--med); background: var(--med-bg); }
+th.h-wc { color: var(--wc); background: var(--wc-bg); }
+th.h-note { color: var(--note); background: var(--note-bg); }
+tbody th { padding: 10px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody th small { display: block; font-size: 0.75rem; font-weight: 600; color: var(--accent); }
+tr.today th, tr.today td { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.cell {
+  display: block; width: 100%; min-height: 52px; height: 100%; padding: 8px 10px; text-align: left;
+  border: 0; background: none; overflow-wrap: anywhere;
+}
+.cell:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.cell div + div { margin-top: 4px; }
+.cell .t { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--muted); margin-right: 4px; }
+.cell .plus { color: var(--muted); opacity: .55; font-size: 0.8125rem; }
+td.note .cell { color: var(--note); }
+.ox { display: flex; gap: 6px; padding: 8px 10px; }
+.ox button {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: transparent;
+  font-weight: 700; color: var(--muted);
+}
+.ox button[aria-pressed="true"] { background: var(--wc); border-color: var(--wc); color: var(--surface); }
+.ox button[data-ox="X"][aria-pressed="true"] { background: var(--note); border-color: var(--note); }
+.empty { color: var(--muted); font-size: 0.9375rem; padding: 12px; margin: 0; }
+.linkbtn { border: 0; background: none; padding: 8px 0; color: var(--accent); font-weight: 600; font-size: 0.875rem; align-self: flex-start; }
+
+/* 좁은 화면: 하루가 카드 한 장 */
+@media (max-width: 700px) {
+  .tablewrap { border: 0; background: none; border-radius: 0; overflow: visible; }
+  table, tbody, tr, td, tbody th { display: block; }
+  thead, colgroup { display: none; }
+  tr { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+  th, td { border-left: 0; }
+  tbody th { border-top: 0; font-size: 1rem; }
+  tbody th small { display: inline; margin-left: 6px; }
+  td { display: grid; grid-template-columns: 4.6em 1fr; align-items: stretch; }
+  td::before { content: attr(data-label); padding: 10px; font-size: 0.8125rem; font-weight: 700; }
+  td.meal::before { color: var(--meal); background: var(--meal-bg); }
+  td.med::before { color: var(--med); background: var(--med-bg); }
+  td.wc::before { color: var(--wc); background: var(--wc-bg); }
+  td.note::before { color: var(--note); background: var(--note-bg); }
+  .cell { min-height: 44px; }
+}
+
+/* 입력 창 */
+dialog {
+  border: 1px solid var(--line); border-radius: 16px; padding: 20px; width: min(460px, calc(100% - 32px));
+  background: var(--surface); color: var(--ink); max-height: calc(100% - 32px); overflow-y: auto;
+}
+dialog::backdrop { background: rgba(8, 20, 18, .55); }
+dialog h2 { margin: 0 0 12px; font-size: 1.125rem; font-weight: 700; text-wrap: balance; }
+dialog h2 small { display: block; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+dialog input, dialog textarea { background: var(--bg); }
+form { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  min-height: 36px; padding: 4px 12px; border-radius: 18px; border: 1px solid var(--line);
+  background: transparent; font-size: 0.875rem; color: var(--muted);
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.primary { height: 48px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; flex: 1; }
+.ghost { height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: transparent; font-weight: 600; }
+.have { list-style: none; margin: 0 0 14px; padding: 0; border: 1px solid var(--line); border-radius: 10px; }
+.have li { display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; border-top: 1px solid var(--line); }
+.have li:first-child { border-top: 0; }
+.have .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.have .what small { display: block; color: var(--note); }
+.have button { border: 0; background: none; padding: 4px 0; font-size: 0.8125rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.have button.sure { color: var(--danger); font-weight: 700; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>하루 기록장</h1>
+    <p class="hint">적고 싶은 칸을 누르면 바로 적을 수 있어요.</p>
+    <div class="status" id="status" role="status">기록을 불러오는 중…</div>
+  </header>
+
+  <div class="tools">
+    <div class="field grow">
+      <label for="q">검색 (내용 또는 날짜)</label>
+      <input type="search" id="q" placeholder="예: 타이레놀, 배가 아픔, 11/17, 11월">
+    </div>
+    <div class="field">
+      <label for="addDate">다른 날짜 적기</label>
+      <input type="date" id="addDate">
+    </div>
+  </div>
+
+  <div id="table"></div>
+  <div class="tools backup">
+    <button class="ghost" type="button" id="exportBtn">백업 파일 저장</button>
+    <button class="ghost" type="button" id="importBtn">백업 불러오기</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </div>
+  <button class="linkbtn" id="more" type="button" hidden>이전 기록 더 보기</button>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <h2 id="dlgTitle"></h2>
+  <ul class="have" id="have" hidden></ul>
+  <form id="form" autocomplete="off">
+    <div class="row" id="medRow">
+      <div class="field">
+        <label for="fTime">복용 시간</label>
+        <input type="time" id="fTime">
+      </div>
+      <div class="field grow">
+        <span class="lbl" id="subLbl">복용 시점 (선택)</span>
+        <div class="chips" id="subChips" role="group" aria-labelledby="subLbl"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="fText" id="textLbl">먹은 것</label>
+      <input type="text" id="fText" maxlength="300">
+      <div class="chips" id="recent" aria-label="자주 쓰는 항목"></div>
+    </div>
+    <div class="field" id="memoField">
+      <label for="fMemo">비고 (선택)</label>
+      <textarea id="fMemo" rows="2" maxlength="500"></textarea>
+    </div>
+    <div class="row">
+      <button class="primary" type="submit" id="submitBtn">저장</button>
+      <button class="ghost" type="button" id="closeBtn">닫기</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const SLOTS = ["점심", "저녁", "간식"];
+  const SLOT_TIME = { 아침: "08:00", 점심: "12:30", 저녁: "18:30", 간식: "15:30" };
+  const MED_SUBS = ["식전", "식후", "취침 전"];
+  const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+  const LS_KEY = "daily-log-v1";
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parse = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const nowHM = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const niceDate = (s) => { const d = parse(s); return `${d.getMonth() + 1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`; };
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const mealSlot = (hm) => { const h = +hm.slice(0, 2); return h < 15 ? "점심" : h < 21 ? "저녁" : "간식"; };
+  // 날짜 검색용: 2026-11-17, 2026.11.17, 11/17, 11-17, 11.17, 11월17일, 화요일
+  const dateWords = (s) => { const d = parse(s), m = d.getMonth() + 1, n = d.getDate(); return `${s} ${s.replace(/-/g, ".")} ${s.replace(/-/g, "/")} ${m}/${n} ${m}-${n} ${m}.${n} ${pad(m)}/${pad(n)} ${pad(m)}.${pad(n)} ${d.getFullYear()}년${m}월${n}일 ${DAYS[d.getDay()]}요일`; };
+  const slotOf = (e) => SLOTS.includes(e.sub) ? e.sub : mealSlot(e.time || "12:00");
+
+  const state = {
+    days: {},          // "YYYY-MM-DD" -> { entries:[{id,type,time,sub,text,memo}], toilet:"O"|"X"|"" }
+    extra: new Set(),  // 기록은 없지만 표에 띄워 둔 날짜
+    shown: 31,
+    col: null,         // db collection, null이면 이 기기에만 저장
+    dlg: null,         // { date, kind:"meal"|"med"|"note", slot, sub, editId, confirmId }
+  };
+  const dirty = new Map();
+  let chain = Promise.resolve();
+  const day = (date) => state.days[date] || { entries: [], toilet: "" };
+  const hasData = (d) => d.entries.length > 0 || !!d.toilet;
+
+  /* ---------- 저장 ---------- */
+  function setStatus(msg, warn) { const el = $("status"); el.textContent = msg; el.classList.toggle("warn", !!warn); }
+
+  function commit(date, d) {
+    if (hasData(d)) state.days[date] = d; else { delete state.days[date]; state.extra.add(date); }
+    const body = hasData(d) ? { date, entries: d.entries.map((e) => ({ ...e })), toilet: d.toilet || "" } : null;
+    render();
+    if (!state.col) {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state.days)); setStatus("저장됨 · 이 기기에 보관"); }
+      catch { setStatus("저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.", true); }
+      return;
+    }
+    dirty.set(date, (dirty.get(date) || 0) + 1);
+    setStatus("저장 중…");
+    chain = chain.then(async () => {
+      const ref = state.col.doc(date);
+      const write = () => body ? ref.set(body) : ref.delete();
+      try {
+        try { await write(); }
+        catch (e) { if (e && e.code === "unavailable") { await new Promise((r) => setTimeout(r, 800 + Math.random() * 800)); await write(); } else throw e; }
+        setStatus("저장됨");
+      } catch (e) {
+        const c = e && e.code;
+        setStatus(c === "quota_exceeded" ? "저장 공간이 가득 찼어요. 오래된 기록을 지워 주세요."
+          : c === "invalid_argument" ? "이 계정으로는 저장할 수 없어요. 편집 권한이 필요합니다."
+          : "저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.", true);
+      } finally {
+        const n = (dirty.get(date) || 1) - 1;
+        n ? dirty.set(date, n) : dirty.delete(date);
+      }
+    });
+  }
+
+  const normalize = (raw) => ({
+    entries: Array.isArray(raw && raw.entries) ? raw.entries.map((e) => ({ ...e })) : (Array.isArray(raw) ? raw.map((e) => ({ ...e })) : []),
+    toilet: raw && (raw.toilet === "O" || raw.toilet === "X") ? raw.toilet : "",
+  });
+
+  async function boot() {
+    let db = null, uid = null;
+    try {
+      if (window.claude && window.claude.use) {
+        const [d, u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+        uid = u ? await u.id() : null;
+        db = d;
+      }
+    } catch { /* 아래에서 기기 저장으로 대체 */ }
+
+    if (db && uid) {
+      state.col = db.collection("data/users/" + uid);
+      const timer = setTimeout(() => setStatus("아직 기록을 불러오지 못했어요. 연결을 확인해 주세요.", true), 10000);
+      state.col.onSnapshot((snap) => {
+        if (!snap.metadata.fromCache) { clearTimeout(timer); if (!dirty.size) setStatus("저장됨"); }
+        const next = {};
+        snap.docs.forEach((doc) => { const d = normalize(doc.data()); if (hasData(d)) next[doc.id] = d; });
+        dirty.forEach((_, date) => { if (state.days[date]) next[date] = state.days[date]; else delete next[date]; });
+        state.days = next;
+        render();
+        if (state.dlg && $("dlg").open) renderHave();
+      }, () => { clearTimeout(timer); setStatus("기록을 불러올 수 없어요. 페이지를 다시 열어 주세요.", true); });
+    } else {
+      try {
+        const raw = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {};
+        Object.keys(raw).forEach((k) => { const d = normalize(raw[k]); if (hasData(d)) state.days[k] = d; });
+      } catch { state.days = {}; }
+      setStatus("이 기기에 저장됩니다");
+      render();
+    }
+  }
+
+  /* ---------- 표 ---------- */
+  function render() {
+    const today = ymd(new Date());
+    const q = $("q").value.trim().toLowerCase();
+    const set = new Set([today, ...state.extra, ...Object.keys(state.days)]);
+    let dates = [...set].sort().reverse();
+    if (q) dates = dates.filter((d) => dateWords(d).includes(q.replace(/\s+/g, "")) || day(d).entries.some((e) => `${e.text} ${e.memo || ""} ${e.sub || ""}`.toLowerCase().includes(q)));
+    const total = dates.length;
+    dates = dates.slice(0, state.shown);
+    $("more").hidden = total <= state.shown;
+
+    if (!dates.length) { $("table").innerHTML = `<p class="empty">검색 결과가 없어요.</p>`; return; }
+
+    const plus = `<span class="plus">＋ 적기</span>`;
+    const cellBtn = (date, key, label, items) =>
+      `<button type="button" class="cell" data-date="${date}" data-cell="${key}" aria-label="${niceDate(date)} ${label} 적기">${items.length ? items.map((x) => `<div>${x}</div>`).join("") : plus}</button>`;
+
+    const rows = dates.map((date) => {
+      const d = day(date);
+      const meals = { 점심: [], 저녁: [], 간식: [] }, meds = [], notes = [];
+      d.entries.forEach((e) => {
+        if (e.type === "meal") meals[slotOf(e)].push(esc(e.text));
+        else if (e.type === "med") meds.push(`<span class="t">${esc(e.time)}</span>${esc(e.text)}${e.sub ? ` (${esc(e.sub)})` : ""}`);
+        else notes.push(esc(e.text));
+        if (e.memo) notes.push(`${esc(e.text)} → ${esc(e.memo)}`);
+      });
+      const dt = parse(date);
+      return `<tr class="${date === today ? "today" : ""}">
+        <th scope="row">${dt.getMonth() + 1}/${dt.getDate()} (${DAYS[dt.getDay()]})${date === today ? "<small>오늘</small>" : ""}</th>
+        ${SLOTS.map((s) => `<td class="meal" data-label="${s}">${cellBtn(date, "meal:" + s, s, meals[s])}</td>`).join("")}
+        <td class="med" data-label="약">${cellBtn(date, "med", "약", meds)}</td>
+        <td class="wc" data-label="화장실"><div class="ox" role="group" aria-label="${niceDate(date)} 화장실">
+          <button type="button" data-date="${date}" data-ox="O" aria-pressed="${d.toilet === "O"}" aria-label="갔음">O</button>
+          <button type="button" data-date="${date}" data-ox="X" aria-pressed="${d.toilet === "X"}" aria-label="못 감">X</button>
+        </div></td>
+        <td class="note" data-label="비고">${cellBtn(date, "note", "비고", notes)}</td>
+      </tr>`;
+    });
+
+    $("table").innerHTML = `<div class="tablewrap"><table>
+      <colgroup><col class="c-date"><col><col><col><col class="c-med"><col class="c-wc"><col class="c-note"></colgroup>
+      <thead><tr><th>날짜</th>${SLOTS.map((s) => `<th class="h-meal">${s}</th>`).join("")}<th class="h-med">약 (복용 시간)</th><th class="h-wc">화장실</th><th class="h-note">비고·증상</th></tr></thead>
+      <tbody>${rows.join("")}</tbody></table></div>`;
+  }
+
+  $("table").addEventListener("click", (ev) => {
+    const ox = ev.target.closest("[data-ox]");
+    if (ox) {
+      const d = day(ox.dataset.date);
+      commit(ox.dataset.date, { entries: d.entries, toilet: d.toilet === ox.dataset.ox ? "" : ox.dataset.ox });
+      return;
+    }
+    const c = ev.target.closest("[data-cell]"); if (!c) return;
+    const [kind, slot] = c.dataset.cell.split(":");
+    openDlg(c.dataset.date, kind, slot || "");
+  });
+  $("q").addEventListener("input", () => { state.shown = 31; render(); });
+  $("more").addEventListener("click", () => { state.shown += 31; render(); });
+  $("addDate").addEventListener("change", (ev) => {
+    const v = ev.target.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+    state.extra.add(v); $("q").value = ""; state.shown = Math.max(state.shown, 400); ev.target.value = ymd(new Date());
+    render();
+    const btn = document.querySelector(`.cell[data-date="${v}"]`);
+    if (btn) btn.closest("tr").scrollIntoView({ block: "center", behavior: "smooth" });
+  });
+
+  /* ---------- 입력 창 ---------- */
+  const inCell = (e) => {
+    const g = state.dlg;
+    return g.kind === "meal" ? e.type === "meal" && slotOf(e) === g.slot : e.type === g.kind;
+  };
+
+  function openDlg(date, kind, slot) {
+    state.dlg = { date, kind, slot, sub: "", editId: null, confirmId: null };
+    const name = kind === "meal" ? slot : kind === "med" ? "약" : "비고·증상";
+    $("dlgTitle").innerHTML = `<small>${niceDate(date)}</small>${name}`;
+    $("textLbl").textContent = kind === "meal" ? "먹은 것" : kind === "med" ? "약 이름" : "내용";
+    $("fText").placeholder = kind === "meal" ? "예: 김치찌개, 밥 반 공기" : kind === "med" ? "예: 타이레놀 1정" : "예: 오후부터 두통";
+    $("fMemo").placeholder = kind === "meal" ? "예: 먹고 배가 아픔" : "예: 먹고 메스꺼움";
+    $("medRow").hidden = kind !== "med";
+    $("memoField").hidden = kind === "note";
+    clearForm();
+    renderHave(); renderRecent();
+    $("dlg").showModal();
+    $("fText").focus();
+  }
+
+  function clearForm() {
+    const g = state.dlg;
+    g.editId = null; g.sub = "";
+    $("fText").value = ""; $("fMemo").value = "";
+    $("fTime").value = nowHM();
+    $("submitBtn").textContent = "저장";
+    renderSubs();
+  }
+  function renderSubs() {
+    $("subChips").innerHTML = MED_SUBS.map((s) => `<button type="button" class="chip" data-sub="${s}" aria-pressed="${s === state.dlg.sub}">${s}</button>`).join("");
+  }
+  function renderHave() {
+    const g = state.dlg, list = day(g.date).entries.filter(inCell);
+    $("have").hidden = !list.length;
+    $("have").innerHTML = list.map((e) => `<li>
+      <span class="what">${e.type === "med" ? `<b>${esc(e.time)}</b> ` : ""}${esc(e.text)}${e.type === "med" && e.sub ? ` (${esc(e.sub)})` : ""}${e.memo ? `<small>비고: ${esc(e.memo)}</small>` : ""}</span>
+      <button type="button" data-edit="${esc(e.id)}">수정</button>
+      <button type="button" data-del="${esc(e.id)}" class="${g.confirmId === e.id ? "sure" : ""}">${g.confirmId === e.id ? "한 번 더 누르면 삭제" : "삭제"}</button>
+    </li>`).join("");
+  }
+  function renderRecent() {
+    const g = state.dlg, box = $("recent");
+    if (g.kind === "note") { box.innerHTML = ""; return; }
+    const count = new Map();
+    Object.keys(state.days).sort().reverse().slice(0, 60).forEach((d) => {
+      state.days[d].entries.forEach((e) => { if (e.type === g.kind && e.text) count.set(e.text, (count.get(e.text) || 0) + 1); });
+    });
+    const top = [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0]);
+    box.innerHTML = top.map((s) => `<button type="button" class="chip" data-fill="${esc(s)}">${esc(s)}</button>`).join("");
+  }
+
+  $("have").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button"); if (!b) return;
+    const g = state.dlg, d = day(g.date);
+    if (b.dataset.edit) {
+      const e = d.entries.find((x) => x.id === b.dataset.edit); if (!e) return;
+      g.editId = e.id; g.confirmId = null; g.sub = e.type === "med" ? (e.sub || "") : "";
+      $("fText").value = e.text; $("fMemo").value = e.memo || ""; $("fTime").value = e.time || nowHM();
+      $("submitBtn").textContent = "수정 저장";
+      renderSubs(); renderHave(); $("fText").focus();
+    } else if (b.dataset.del) {
+      if (g.confirmId !== b.dataset.del) { g.confirmId = b.dataset.del; renderHave(); return; }
+      g.confirmId = null;
+      if (g.editId === b.dataset.del) clearForm();
+      commit(g.date, { entries: d.entries.filter((x) => x.id !== b.dataset.del), toilet: d.toilet });
+      renderHave();
+    }
+  });
+  $("subChips").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button"); if (!b) return;
+    state.dlg.sub = state.dlg.sub === b.dataset.sub ? "" : b.dataset.sub; renderSubs();
+  });
+  $("recent").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button"); if (!b) return;
+    $("fText").value = b.dataset.fill; $("fText").focus();
+  });
+
+  $("form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const g = state.dlg, text = $("fText").value.trim();
+    if (!text) { $("fText").focus(); return; }
+    const d = day(g.date);
+    const old = g.editId ? d.entries.find((x) => x.id === g.editId) : null;
+    const entry = {
+      id: g.editId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+      type: g.kind,
+      time: g.kind === "med" ? ($("fTime").value || nowHM()) : g.kind === "meal" ? SLOT_TIME[g.slot] : (old ? old.time : nowHM()),
+      sub: g.kind === "meal" ? g.slot : g.kind === "med" ? g.sub : "",
+      text,
+      memo: g.kind === "note" ? "" : $("fMemo").value.trim(),
+    };
+    const entries = d.entries.filter((e) => e.id !== entry.id);
+    entries.push(entry);
+    entries.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+    commit(g.date, { entries, toilet: d.toilet });
+    $("dlg").close();
+  });
+  $("closeBtn").addEventListener("click", () => $("dlg").close());
+  $("dlg").addEventListener("click", (ev) => { if (ev.target === $("dlg")) $("dlg").close(); });
+
+  /* ---------- 백업 ---------- */
+  $("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ app: "daily-log", version: 1, days: state.days }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "하루기록장-백업-" + ymd(new Date()) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    setStatus("백업 파일을 저장했어요");
+  });
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", async (ev) => {
+    const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+    try {
+      const raw = JSON.parse(await f.text());
+      const src = raw && raw.days && typeof raw.days === "object" ? raw.days : null;
+      if (!src) throw new Error("format");
+      let n = 0;
+      Object.keys(src).forEach((k) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+        const d = normalize(src[k]); if (hasData(d)) { state.days[k] = d; n++; }
+      });
+      localStorage.setItem(LS_KEY, JSON.stringify(state.days));
+      render(); setStatus(n + "일치 기록을 불러왔어요");
+    } catch { setStatus("불러오지 못했어요. 하루 기록장 백업 파일(.json)인지 확인해 주세요.", true); }
+  });
+
+  $("addDate").value = ymd(new Date());
+  render();
+  boot();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+
+</body>
+</html>
