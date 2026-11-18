@@ -101,7 +101,8 @@ th.h-wc { color: var(--wc); background: var(--wc-bg); }
 th.h-note { color: var(--note); background: var(--note-bg); }
 tbody th { padding: 10px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 tbody th small { display: block; font-size: 0.75rem; font-weight: 600; color: var(--accent); }
-tr.today th, tr.today td { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+tbody th, tbody td { background: color-mix(in srgb, var(--ink) 7%, var(--surface)); }
+tr.today th, tr.today td { background: var(--surface); }
 .cell {
   display: block; width: 100%; min-height: 52px; height: 100%; padding: 8px 10px; text-align: left;
   border: 0; background: none; overflow-wrap: anywhere;

@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 앱 파일을 기기에 보관한다. 파일을 고치면 VERSION을 올린다.
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = "daily-log-" + VERSION;
 const CORE = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
