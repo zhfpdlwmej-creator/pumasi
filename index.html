@@ -94,7 +94,7 @@ table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 
 th, td { text-align: left; vertical-align: top; border-top: 1px solid var(--line); border-left: 1px solid var(--line); padding: 0; }
 thead th { border-top: 0; padding: 8px 10px; font-size: 0.8125rem; font-weight: 700; }
 th:first-child, td:first-child { border-left: 0; }
-col.c-date { width: 6.2em; } col.c-wc { width: 6.4em; } col.c-med { width: 21%; } col.c-note { width: 21%; }
+col.c-date { width: 6.2em; } col.c-wc { width: 9.5em; } col.c-med { width: 21%; } col.c-note { width: 21%; }
 th.h-meal { color: var(--meal); background: var(--meal-bg); }
 th.h-med { color: var(--med); background: var(--med-bg); }
 th.h-wc { color: var(--wc); background: var(--wc-bg); }
@@ -119,6 +119,8 @@ td.note .cell { color: var(--note); }
 }
 .ox button[aria-pressed="true"] { background: var(--wc); border-color: var(--wc); color: var(--surface); }
 .ox button[data-ox="X"][aria-pressed="true"] { background: var(--note); border-color: var(--note); }
+.wcwrap { display: flex; flex-wrap: wrap; align-items: center; }
+.wcwrap .cell { flex: 1 1 5em; width: auto; min-height: 44px; color: var(--wc); }
 .empty { color: var(--muted); font-size: 0.9375rem; padding: 12px; margin: 0; }
 .linkbtn { border: 0; background: none; padding: 8px 0; color: var(--accent); font-weight: 600; font-size: 0.875rem; align-self: flex-start; }
 
@@ -254,15 +256,16 @@ form { display: flex; flex-direction: column; gap: 12px; }
   };
   const dirty = new Map();
   let chain = Promise.resolve();
-  const day = (date) => state.days[date] || { entries: [], toilet: "" };
-  const hasData = (d) => d.entries.length > 0 || !!d.toilet;
+  const day = (date) => state.days[date] || { entries: [], toilet: "", toiletNote: "" };
+  const hasData = (d) => d.entries.length > 0 || !!d.toilet || !!d.toiletNote;
 
   /* ---------- 저장 ---------- */
   function setStatus(msg, warn) { const el = $("status"); el.textContent = msg; el.classList.toggle("warn", !!warn); }
 
   function commit(date, d) {
+    d = { toiletNote: day(date).toiletNote || "", ...d };
     if (hasData(d)) state.days[date] = d; else { delete state.days[date]; state.extra.add(date); }
-    const body = hasData(d) ? { date, entries: d.entries.map((e) => ({ ...e })), toilet: d.toilet || "" } : null;
+    const body = hasData(d) ? { date, entries: d.entries.map((e) => ({ ...e })), toilet: d.toilet || "", toiletNote: d.toiletNote || "" } : null;
     render();
     if (!state.col) {
       try { localStorage.setItem(LS_KEY, JSON.stringify(state.days)); setStatus("저장됨 · 이 기기에 보관"); }
@@ -293,6 +296,7 @@ form { display: flex; flex-direction: column; gap: 12px; }
   const normalize = (raw) => ({
     entries: Array.isArray(raw && raw.entries) ? raw.entries.map((e) => ({ ...e })) : (Array.isArray(raw) ? raw.map((e) => ({ ...e })) : []),
     toilet: raw && (raw.toilet === "O" || raw.toilet === "X") ? raw.toilet : "",
+    toiletNote: raw && typeof raw.toiletNote === "string" ? raw.toiletNote : "",
   });
 
   async function boot() {
@@ -333,7 +337,7 @@ form { display: flex; flex-direction: column; gap: 12px; }
     const q = $("q").value.trim().toLowerCase();
     const set = new Set([today, ...state.extra, ...Object.keys(state.days)]);
     let dates = [...set].sort().reverse();
-    if (q) dates = dates.filter((d) => dateWords(d).includes(q.replace(/\s+/g, "")) || day(d).entries.some((e) => `${e.text} ${e.memo || ""} ${e.sub || ""}`.toLowerCase().includes(q)));
+    if (q) dates = dates.filter((d) => dateWords(d).includes(q.replace(/\s+/g, "")) || day(d).entries.some((e) => `${e.text} ${e.memo || ""} ${e.sub || ""}`.toLowerCase().includes(q)) || (day(d).toiletNote || "").toLowerCase().includes(q));
     const total = dates.length;
     dates = dates.slice(0, state.shown);
     $("more").hidden = total <= state.shown;
@@ -358,10 +362,10 @@ form { display: flex; flex-direction: column; gap: 12px; }
         <th scope="row">${dt.getMonth() + 1}/${dt.getDate()} (${DAYS[dt.getDay()]})${date === today ? "<small>오늘</small>" : ""}</th>
         ${SLOTS.map((s) => `<td class="meal" data-label="${s}">${cellBtn(date, "meal:" + s, s, meals[s])}</td>`).join("")}
         <td class="med" data-label="약">${cellBtn(date, "med", "약", meds)}</td>
-        <td class="wc" data-label="화장실"><div class="ox" role="group" aria-label="${niceDate(date)} 화장실">
+        <td class="wc" data-label="화장실"><div class="wcwrap"><div class="ox" role="group" aria-label="${niceDate(date)} 화장실">
           <button type="button" data-date="${date}" data-ox="O" aria-pressed="${d.toilet === "O"}" aria-label="갔음">O</button>
           <button type="button" data-date="${date}" data-ox="X" aria-pressed="${d.toilet === "X"}" aria-label="못 감">X</button>
-        </div></td>
+        </div>${cellBtn(date, "wc", "화장실 상태", d.toiletNote ? [esc(d.toiletNote)] : [])}</div></td>
         <td class="note" data-label="비고">${cellBtn(date, "note", "비고", notes)}</td>
       </tr>`;
     });
@@ -401,14 +405,15 @@ form { display: flex; flex-direction: column; gap: 12px; }
 
   function openDlg(date, kind, slot) {
     state.dlg = { date, kind, slot, sub: "", editId: null, confirmId: null };
-    const name = kind === "meal" ? slot : kind === "med" ? "약" : "비고·증상";
+    const name = kind === "meal" ? slot : kind === "med" ? "약" : kind === "wc" ? "화장실 상태" : "비고·증상";
     $("dlgTitle").innerHTML = `<small>${niceDate(date)}</small>${name}`;
-    $("textLbl").textContent = kind === "meal" ? "먹은 것" : kind === "med" ? "약 이름" : "내용";
-    $("fText").placeholder = kind === "meal" ? "예: 김치찌개, 밥 반 공기" : kind === "med" ? "예: 타이레놀 1정" : "예: 오후부터 두통";
+    $("textLbl").textContent = kind === "meal" ? "먹은 것" : kind === "med" ? "약 이름" : kind === "wc" ? "어떤 상태였나요 (비우고 저장하면 지워져요)" : "내용";
+    $("fText").placeholder = kind === "meal" ? "예: 김치찌개, 밥 반 공기" : kind === "med" ? "예: 타이레놀 1정" : kind === "wc" ? "예: 묽음, 딱딱함, 배 아픔" : "예: 오후부터 두통";
     $("fMemo").placeholder = kind === "meal" ? "예: 먹고 배가 아픔" : "예: 먹고 메스꺼움";
     $("medRow").hidden = kind !== "med";
-    $("memoField").hidden = kind === "note";
+    $("memoField").hidden = kind === "note" || kind === "wc";
     clearForm();
+    if (kind === "wc") $("fText").value = day(date).toiletNote || "";
     renderHave(); renderRecent();
     $("dlg").showModal();
     $("fText").focus();
@@ -439,6 +444,7 @@ form { display: flex; flex-direction: column; gap: 12px; }
     if (g.kind === "note") { box.innerHTML = ""; return; }
     const count = new Map();
     Object.keys(state.days).sort().reverse().slice(0, 60).forEach((d) => {
+      if (g.kind === "wc") { const t = state.days[d].toiletNote; if (t) count.set(t, (count.get(t) || 0) + 1); return; }
       state.days[d].entries.forEach((e) => { if (e.type === g.kind && e.text) count.set(e.text, (count.get(e.text) || 0) + 1); });
     });
     const top = [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0]);
@@ -474,6 +480,7 @@ form { display: flex; flex-direction: column; gap: 12px; }
   $("form").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const g = state.dlg, text = $("fText").value.trim();
+    if (g.kind === "wc") { const w = day(g.date); commit(g.date, { entries: w.entries, toilet: w.toilet, toiletNote: text }); $("dlg").close(); return; }
     if (!text) { $("fText").focus(); return; }
     const d = day(g.date);
     const old = g.editId ? d.entries.find((x) => x.id === g.editId) : null;
